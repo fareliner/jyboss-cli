@@ -8,9 +8,14 @@ The target machine on which to run this module must have Java 8 and [Jython 2.7]
 
 ### Installation
 
-Download the packaged JyBoss module and install it with pip (make sure its the jython pip and not the python one installed with the typical OS).
+Download the packaged [JyBoss module](https://github.com/bertramn/jyboss-cli/releases/latest) and install it with pip (make sure its the jython pip and not the python one installed with the typical OS).
+
+Example `pip` Installation:
 
 ```sh
+curl -L -o jyboss-0.0.1.tar.gz \
+     https://github.com/bertramn/jyboss-cli/releases/download/v0.0.1/jyboss-0.0.1.tar.gz
+
 pip install -U jyboss-0.0.1.tar.gz
 ```
 
