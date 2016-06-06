@@ -1,4 +1,5 @@
 from java.io import OutputStream
+from java.lang import System
 
 LOG_ERR = dict(code=3, name="ERROR")
 LOG_WARNING = dict(code=4, name="WARN")
@@ -20,7 +21,10 @@ def _log(level, msg):
         syslog.openlog(str(logmod), 0, syslog.LOG_USER)
         syslog.syslog(level["code"], msg)
     else:
-        print "[%s] %s: %s" % (level["name"], logmod, msg)
+        if level["code"] > 3:
+            System.out.println("[%s] %s: %s" % (level["name"], logmod, msg))
+        else:
+            System.err.println("[%s] %s: %s" % (level["name"], logmod, msg))
 
 
 def error(msg):
