@@ -1,46 +1,63 @@
 from java.io import OutputStream
-from java.lang import System
-
-LOG_ERR = dict(code=3, name="ERROR")
-LOG_WARNING = dict(code=4, name="WARN")
-LOG_NOTICE = dict(code=5, name="NOTICE")
-LOG_INFO = dict(code=6, name="INFO")
-LOG_DEBUG = dict(code=7, name="DEBUG")
 
 try:
-    import syslog
+    from org.graylog2.syslog4j import SyslogConstants, Syslog
 
     HAS_SYSLOG = True
+    syslog = Syslog.getInstance("unix_syslog")
+    config = syslog.getConfig()
+    config.setFacility(SyslogConstants.FACILITY_USER)
+    config.setThrowExceptionOnWrite(False)
+    config.setIdent(__name__.split(".", 1)[0])
+    config.setIncludeIdentInMessageModifier(True)
+    # localName ??
 except ImportError:
     HAS_SYSLOG = False
 
 
 def _log(level, msg):
-    logmod = 'ansible-%s' % __name__.split(".", 1)[0]
     if HAS_SYSLOG:
-        syslog.openlog(str(logmod), 0, syslog.LOG_USER)
-        syslog.syslog(level["code"], msg)
-    else:
-        if level["code"] > 3:
-            System.out.println("[%s] %s: %s" % (level["name"], logmod, msg))
-        else:
-            System.err.println("[%s] %s: %s" % (level["name"], logmod, msg))
+        syslog.log(level, msg)
+
+
+def emergency(msg):
+    if HAS_SYSLOG:
+        _log(SyslogConstants.LEVEL_EMERGENCY, msg)
+
+
+def alert(msg):
+    if HAS_SYSLOG:
+        _log(SyslogConstants.LEVEL_ALERT, msg)
+
+
+def critical(msg):
+    if HAS_SYSLOG:
+        _log(SyslogConstants.LEVEL_CRITICAL, msg)
 
 
 def error(msg):
-    _log(LOG_ERR, msg)
+    if HAS_SYSLOG:
+        _log(SyslogConstants.LEVEL_ERROR, msg)
 
 
 def warn(msg):
-    _log(LOG_WARNING, msg)
+    if HAS_SYSLOG:
+        _log(SyslogConstants.LEVEL_WARN, msg)
+
+
+def notice(msg):
+    if HAS_SYSLOG:
+        _log(SyslogConstants.LEVEL_NOTICE, msg)
 
 
 def info(msg):
-    _log(LOG_INFO, msg)
+    if HAS_SYSLOG:
+        _log(SyslogConstants.LEVEL_INFO, msg)
 
 
 def debug(msg):
-    _log(LOG_DEBUG, msg)
+    if HAS_SYSLOG:
+        _log(SyslogConstants.LEVEL_DEBUG, msg)
 
 
 class SyslogOutputStream(OutputStream):
