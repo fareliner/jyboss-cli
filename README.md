@@ -8,15 +8,15 @@ The target machine on which to run this module must have Java 8 and [Jython 2.7]
 
 ### Installation
 
-Download the packaged [JyBoss module](https://github.com/bertramn/jyboss-cli/releases/latest) and install it with pip (make sure its the jython pip and not the python one installed with the typical OS).
+Download the packaged [JyBoss module](https://github.com/fareliner/jyboss-cli/releases/latest) and install it with pip (make sure its the jython pip and not the python one installed with the typical OS).
 
 Example `pip` Installation:
 
 ```sh
-curl -L -o jyboss-0.0.1.tar.gz \
-     https://github.com/bertramn/jyboss-cli/releases/download/v0.0.1/jyboss-0.0.1.tar.gz
+curl -L -o jyboss-0.0.4.tar.gz \
+     https://github.com/fareliner/jyboss-cli/releases/download/v0.0.1/jyboss-0.0.1.tar.gz
 
-pip install -U jyboss-0.0.1.tar.gz
+pip install -U jyboss-0.0.4.tar.gz
 ```
 
 ### Usage
@@ -51,7 +51,7 @@ ls()
 cd("ExampleDS")
 
 # you can use pretty much any of the commands possible on the normal cli
-# only difference is, the output is proper json with field names are also valid in YAML 
+# only difference is, the output is proper json with field names are also valid in YAML
 cmd(":read-resource(attributes-only=true, include-defaults=false)")
 {
     "result": {
@@ -67,14 +67,14 @@ cmd(":read-resource(attributes-only=true, include-defaults=false)")
 
 JyBoss also imports is also a Connection resource that can be used to handle the connection lifecycle using pythons with resource management (works like the file modules).
 
-Another feature is the non-interactive mode of the session. In this mode printing to the terminal is suppressed and one can use the command and assign the result to variables - think ansible modules where the stdout must be a valid json response at the end of script execution. 
+Another feature is the non-interactive mode of the session. In this mode printing to the terminal is suppressed and one can use the command and assign the result to variables - think ansible modules where the stdout must be a valid json response at the end of script execution.
 
 ```py
 #! /usr/bin/env jython
 import json
 from jyboss import *
 
-# connection takes the same arguments as the static connect() command 
+# connection takes the same arguments as the static connect() command
 with ServerConnection() as conn:  
   # you now have a valid session
   # jyboss context is available and so is the actual Jboss CLI
@@ -130,7 +130,7 @@ A few weeks ago I tried to automate the installation and setup of JBoss AS with 
    example_ds: "{{ example_ds_check.stdout | from_json }}"
 ```
 
-So where from here? After some fiddling around with `jython`, the `jboss-cli-client.jar` and `ansible` I managed to produce a [custom ansible jython module](https://github.com/bertramn/ansible-custom-jython-module). Things got much more sophisticated much more quickly from the initial hack jython script that I decised to separate the ansible module from the jython wrapper.
+So where from here? After some fiddling around with `jython`, the `jboss-cli-client.jar` and `ansible` I managed to produce a [custom ansible jython module](https://github.com/fareliner/ansible-custom-jython-module). Things got much more sophisticated much more quickly from the initial hack jython script that I decised to separate the ansible module from the jython wrapper.
 
 
 
@@ -177,4 +177,12 @@ class NoopOutputStream(OutputStream):
 System.setOut(PrintStream(NoopOutputStream()))
 System.setErr(PrintStream(NoopOutputStream()))
 
+```
+
+### Building a Release
+
+This project uses the standard python setup mechanism. To build a distributable package simply use:
+
+```sh
+jython setup.py sdist --formats=gztar,zip
 ```
