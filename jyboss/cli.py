@@ -1,3 +1,6 @@
+# Make coding more python3-ish
+from __future__ import (absolute_import, division, print_function)
+
 from java.lang import System, IllegalStateException, IllegalArgumentException
 from java.io import IOException
 from java.net import URI, URISyntaxException

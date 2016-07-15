@@ -1,7 +1,11 @@
+# Make coding more python3-ish
+from __future__ import (absolute_import, division, print_function)
+
 import json
-from .exceptions import *
-from .context import ConnectionEventHandler
-from .logging import info, debug
+
+from jyboss.exceptions import *
+from jyboss.logging import info, debug
+from jyboss.context import ConnectionEventHandler
 
 from java.lang import IllegalArgumentException
 

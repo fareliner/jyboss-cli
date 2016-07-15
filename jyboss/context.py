@@ -1,11 +1,14 @@
+# Make coding more python3-ish
+from __future__ import (absolute_import, division, print_function)
+
 import time
 import traceback
 import collections
 import os
 from abc import ABCMeta, abstractmethod
 
-from .exceptions import ContextError, ConnectionError
-from .logging import debug, SyslogOutputStream
+from jyboss.exceptions import ContextError, ConnectionError
+from jyboss.logging import debug, SyslogOutputStream
 
 from java.lang import IllegalStateException, IllegalArgumentException, System, ClassLoader, Thread
 from java.io import PrintStream, File

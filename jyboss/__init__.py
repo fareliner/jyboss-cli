@@ -2,8 +2,8 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-from .command import *
-from .context import JyBossCLI, ServerConnection, EmbeddedConnection, EMBEDDED_MODE, CONNECTED_MODE
+from jyboss.command import *
+from jyboss.context import JyBossCLI, ServerConnection, EmbeddedConnection, EMBEDDED_MODE, CONNECTED_MODE
 
 #
 #
