@@ -15,3 +15,8 @@ class OperationError(Exception):
     """
     pass
 
+
+class NotFoundError(Exception):
+    """ A problem with a cli command is encountered.
+    """
+    pass

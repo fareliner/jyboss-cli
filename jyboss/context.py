@@ -53,19 +53,15 @@ def retry(exceptions=None, tries=None):
 
 class Connection(object):
     """
-    a cli object that can interact with jyboss
+    abstract connection to a jboss server
     """
+    __metaclass__ = ABCMeta
 
-    def __init__(self, controller_host=None, controller_port=None, admin_username=None, admin_password=None,
-                 mode=CONNECTED_MODE, context=None):
+    def __init__(self, mode=CONNECTED_MODE, context=None):
         if context is None:
             self.context = JyBossCLI.context()
         else:
             self.context = context
-        self._controller_host = controller_host
-        self._controller_port = controller_port
-        self._admin_username = admin_username
-        self._admin_password = admin_password
         self.mode = mode
         self.jcli = None
         self._resource_managed = False
@@ -80,45 +76,94 @@ class Connection(object):
         self._resource_managed = False
         return False
 
+    @abstractmethod
+    def connect(self):
+        """Method documentation"""
+        return
+
+    @abstractmethod
+    def disconnect(self):
+        """Method documentation"""
+        return
+
+
+class EmbeddedConnection(Connection):
+    """
+    a cli object that can start an embedded jboss
+    """
+
+    def __init__(self, mode=CONNECTED_MODE, context=None):
+        super(EmbeddedConnection, self).__init__(mode=mode, context=context)
+
+    def connect(self):
+        if self._resource_managed:
+            raise ContextError("this resource is already connected")
+
+        jcli = self.context.get_jcli_instance()
+        debug("Session.connect: try to connect embedded, current cli: %s" % self.jcli)
+        try:
+            jcli.embedded(self.context.get_jboss_home(), self.context.config_file)
+        except IllegalStateException as e:
+            if e.message.startswith('Already connected to server'):
+                debug("Session.connect: already connected to server")
+            else:
+                debug("Session.connect: connecting to server failed, retry in 2 seconds: %s" % e.message)
+                try:  # cleanup and try again
+                    jcli.disconnect()
+                except:
+                    pass
+                time.sleep(2)
+                raise e
+
+        self.jcli = jcli
+        self.context.observer.publish(self)
+
+    def disconnect(self):
+        debug("Session.disconnect: try to disconnect cli state %s" % self.jcli)
+        if self.jcli is not None:
+            try:
+                self.jcli.disconnect()
+            except:
+                pass
+            finally:
+                self.jcli = None
+                self.context.observer.publish(self)
+
+
+class ServerConnection(Connection):
+    """
+    a cli object that can interact with jboss server
+    """
+
+    def __init__(self, protocol=None, controller_host=None, controller_port=None, admin_username=None,
+                 admin_password=None,
+                 mode=CONNECTED_MODE, context=None):
+        super(ServerConnection, self).__init__(mode=mode, context=context)
+        self._protocol = protocol
+        self._controller_host = controller_host
+        self._controller_port = controller_port
+        self._admin_username = admin_username
+        self._admin_password = admin_password
+
     @retry([ConnectionError], 4)
     def connect(self):
         if self._resource_managed:
             raise ContextError("this resource is already connected")
 
-        # try to load the CLI from classpath
-        try:
-            # @formatter:off
-            from org.jboss.as.cli.scriptsupport import CLI
-            # @formatter:on
-        except ImportError:
-            # try to check the os environment JBOSS_HOME
-            # if context has jboss_home defined take this else look at
-            if self.context.jboss_home is None:
-                self.context.jboss_home = os.environ.get("JBOSS_HOME")
-            self.context.configure_classpath()
-
-            # TODO try to check the context has jboss_home set
-            try:
-                # @formatter:off
-                from org.jboss.as.cli.scriptsupport import CLI
-                # @formatter:on
-            except ImportError:
-                raise ContextError(
-                    "jboss cli libraries are not on the classpath, either start jython with jboss-cli-client.jar on the classpath, set JBOSS_HOME environment variable or create a context with a specific jboss_home path")
-
+        jcli = self.context.get_jcli_instance()
         debug("Session.connect: try to connect, current cli: %s" % self.jcli)
-        jcli = CLI.newInstance()
         try:
-            if self._controller_host is None or self._controller_port is None or self._admin_username is None or self._admin_password is None:
-                jcli.connect()
-            else:
-                jcli.connect(self._controller_host, self._controller_port, self._admin_username, self._admin_password)
-            debug("connected to server")
+            jcli.connect(protocol=self._protocol,
+                         controller_host=self._controller_host,
+                         controller_port=self._controller_port,
+                         username=self._admin_username,
+                         password=self._admin_password)
+            debug("Session.connect: connected to server")
         except IllegalStateException as e:
             if e.message.startswith('Already connected to server'):
-                debug("already connected to server")
+                debug("Session.connect: already connected to server")
             else:
-                debug("connecting to server failed, retry in 2 seconds: %s" % e.message)
+                debug("Session.connect: connecting to server failed, retry in 2 seconds: %s" % e.message)
                 try:  # cleanup and try again
                     jcli.disconnect()
                 except:
@@ -199,7 +244,7 @@ class ConnectionEventObserver(object):
 class JyBossCLI(object):
     _CONTEXT = None
 
-    def __init__(self, jboss_home=None, session_observer=None, interactive=True):
+    def __init__(self, jboss_home=None, config_file=None, session_observer=None, interactive=True):
         if session_observer is None:
             self.observer = ConnectionEventObserver()
         else:
@@ -208,18 +253,62 @@ class JyBossCLI(object):
         # on what connection is in progress
         self.observer.register_handler(self)
         self.connection = None
+        self.initialized = False
         self.jboss_home = jboss_home
+        self.config_file = config_file if config_file is not None else 'standalone.xml'
         self.original_streams = streams(System.out, System.err)
         self.silent_streams = None
         self._set_interactive(interactive)
         # TODO save original streams before nuking them
 
     @staticmethod
-    def context(jboss_home=None, session_observer=None, interactive=True):
+    def context(jboss_home=None, config_file=None, session_observer=None, interactive=True):
         if JyBossCLI._CONTEXT is None:
-            JyBossCLI._CONTEXT = JyBossCLI(jboss_home=jboss_home, session_observer=session_observer,
+            JyBossCLI._CONTEXT = JyBossCLI(jboss_home=jboss_home, config_file=config_file, session_observer=session_observer,
                                            interactive=interactive)
         return JyBossCLI._CONTEXT
+
+    def get_jcli_instance(self):
+
+        try:
+            # @formatter:off
+            from org.jboss.logmanager import LogManager as JBossLogManager
+            from org.jboss.as.cli import CommandContextFactory
+            from org.jboss.as.cli import CliInitializationException
+            from org.jboss.as.cli import CommandLineException
+            # @formatter:on
+            self.initialized = True
+        except ImportError:
+            self.configure_classpath()
+            try:
+                # @formatter:off
+                from org.jboss.logmanager import LogManager as JBossLogManager
+                from org.jboss.as.cli import CommandContextFactory
+                from org.jboss.as.cli import CliInitializationException
+                from org.jboss.as.cli import CommandLineException
+                # @formatter:on
+                self.initialized = True
+            except ImportError:
+                raise ContextError(
+                    "jboss cli libraries are not on the classpath, either start jython with jboss-cli-client.jar on the classpath, set JBOSS_HOME environment variable or create a context with a specific jboss_home path")
+
+        # if the log manager is JUL we need to hack it as it has been initialised prior we got a change to do so,
+        # embedded mode will fail if this is not setup properly
+        from java.util.logging import LogManager as JulLogManager
+        logManager = JulLogManager.getLogManager()
+        if type(logManager) is JulLogManager:
+            # need to hack the JUL LogManager
+            from java.lang.reflect import Modifier
+            field = logManager.__class__.getDeclaredField("manager")
+            field.setAccessible(True)
+            modifiersField = field.__class__.getDeclaredField("modifiers")
+            modifiersField.setAccessible(True)
+            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL)
+            field.set(None, JBossLogManager())
+
+        # now it's safe to load the cli
+        from .cli import Cli
+        return Cli()
 
     def noninteractive(self):
         self._set_interactive(False)
@@ -246,6 +335,18 @@ class JyBossCLI(object):
 
         self.interactive = interactive
 
+    def get_jboss_home(self):
+        # first check if the jboss home was passed in as java property
+        if self.jboss_home is None:
+            self.jboss_home = System.getProperty('jboss.home.dir')
+
+        # if still nothing, try to check the os environment JBOSS_HOME
+        if self.jboss_home is None:
+            self.jboss_home = os.environ.get("JBOSS_HOME")
+
+        return self.jboss_home
+
+
     def configure_classpath(self):
         """
         jboss CLI does something dodgy and can't just append the cli.jar to the system path
@@ -253,12 +354,13 @@ class JyBossCLI(object):
         instead we are going to add a URL classloader into the loader hirarchy of
         the current thread context
         """
-        if self.jboss_home is None:
+        jboss_home_str = self.get_jboss_home()
+        if jboss_home_str is None:
             raise ContextError("jboss_home must be provided to the module context")
 
-        jboss_home = File(normalize_dirpath(self.jboss_home))
+        jboss_home = File(normalize_dirpath(jboss_home_str))
         if not jboss_home.isDirectory():
-            raise ContextError("jboss_home %s is not a directory or does not exist" % jboss_home)
+            raise ContextError("jboss_home %s is not a directory or does not exist" % jboss_home_str)
         else:
             jars = array([], URL)
             jars.append(File(jboss_home, "/bin/client/jboss-cli-client.jar").toURL())
@@ -295,6 +397,7 @@ class JyBossCLI(object):
         """
         self.connection = connection
 
+    # TODO should remove this from context
     @staticmethod
     def connect(controller_host=None, controller_port=None, admin_username=None, admin_password=None,
                 mode=CONNECTED_MODE):
@@ -302,7 +405,9 @@ class JyBossCLI(object):
         if context.is_connected():
             raise ContextError("session already in progress")
         else:
-            connection = Connection(controller_host, controller_port, admin_username, admin_password, mode, context)
+            connection = ServerConnection(controller_host=controller_host, controller_port=controller_port,
+                                          admin_username=admin_username, admin_password=admin_password, mode=mode,
+                                          context=context)
             connection.connect()
 
     def disconnect(self):

@@ -3,8 +3,13 @@ from jyboss import *
 
 
 class TestConnection(unittest.TestCase):
+    def setUp(self):
+        print ('Running test %s' % self._testMethodName)
+        ctx = JyBossCLI.context()
+        ctx.jboss_home = 'c:\\opt\\keycloak\\keycloak-1.9.8.Final'
+
     def test_connect_managed(self):
-        with Connection():
+        with ServerConnection():
             print cd("/")
             print ls()
 

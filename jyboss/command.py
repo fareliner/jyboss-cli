@@ -6,6 +6,20 @@ from .logging import info, debug
 from java.lang import IllegalArgumentException
 
 
+def _extract_errm(result):
+    """
+
+    :param result: the JBoss DMR result node
+    :return: the error message string
+    """
+    if result is not None:
+        nv = result.getResponse().get("failure-description")
+    else:
+        nv = None
+
+    return None if nv is None else nv.asString()
+
+
 class CommandHandler(ConnectionEventHandler):
     def __init__(self):
         self._connection = None
@@ -100,16 +114,13 @@ class CommandHandler(ConnectionEventHandler):
 
         if self._connection.context.interactive and not silent:
             if response is None:
-                print "ok"
+                print("ok")
             elif isinstance(response, dict) or isinstance(response, list):
-                print json.dumps(response, indent=4)
+                print(json.dumps(response, indent=4))
             else:
-                print repr(response)
+                print(repr(response))
         else:
             return {"response": "ok"} if response is None else {"response": response}
-
-    def _errm(self, result):
-        return result.getResponse().get("failure-description")
 
 
 class BasicCommandHandler(CommandHandler):
@@ -119,7 +130,7 @@ class BasicCommandHandler(CommandHandler):
             if result.isSuccess():
                 return self._return_success(result, silent=silent)
             else:
-                raise OperationError(self._errm(result))
+                raise OperationError(_extract_errm(result))
         except IllegalArgumentException as e:
             raise OperationError(e.getMessage())
 
@@ -128,7 +139,11 @@ class BasicCommandHandler(CommandHandler):
         if result.isSuccess():
             return self._return_success(result, BasicCommandHandler._ls_response_magic, silent=silent)
         else:
-            raise OperationError(self._errm(result))
+            errm = _extract_errm(result)
+            if errm.find('WFLYCTL0062') != -1 and errm.find('WFLYCTL0216') != -1:
+                raise NotFoundError(errm)
+            else:
+                raise OperationError(errm)
 
     @staticmethod
     def _ls_response_magic(response):
@@ -157,4 +172,18 @@ class RawHandler(CommandHandler):
         if result.isSuccess():
             return self._return_success(result, silent=silent)
         else:
-            raise OperationError(self._errm(result))
+            raise OperationError(_extract_errm(result))
+
+
+class BatchHandler(CommandHandler):
+    def start(self):
+        self._cli().batch_start()
+
+    def reset(self):
+        self._cli().batch_reset()
+
+    def add_cmd(self, batch_cmd):
+        self._cli().batch_add_cmd(batch_cmd)
+
+    def is_active(self):
+        return self._cli().batch_is_active()

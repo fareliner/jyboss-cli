@@ -75,7 +75,7 @@ import json
 from jyboss import *
 
 # connection takes the same arguments as the static connect() command 
-with Connection() as conn:  
+with ServerConnection() as conn:  
   # you now have a valid session
   # jyboss context is available and so is the actual Jboss CLI
   print "the jyboss context: ", conn.context
