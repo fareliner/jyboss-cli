@@ -21,9 +21,18 @@ class Cli(object):
         self.ctx = None
 
     @staticmethod
-    def newInstance():
-        print('new embedded instance')
+    def instance():
         return Cli()
+
+    def is_silent(self):
+        return False if self.ctx is None else self.ctx.isSilent()
+
+    def set_silent(self, flag=True):
+        if self.ctx is not None:
+            self.ctx.setSilent(flag)
+
+    def is_connected(self):
+        return False if self.ctx is None else not self.ctx.isTerminated()
 
     def check_already_connected(self):
         if self.ctx is not None:
@@ -38,7 +47,8 @@ class Cli(object):
     def get_command_context(self):
         return self.ctx
 
-    def _construct_uri(self, protocol, host, port):
+    @staticmethod
+    def _construct_uri(protocol, host, port):
         try:
             uri = URI(protocol, None, host, port, None, None, None)
             return uri.toString().substring(2) if protocol is None else uri.toString()

@@ -1,0 +1,7 @@
+{
+  "facts": true,
+  "config_file": "standalone-ha.xml",
+  "mode": "standalone",
+  "embedded": true,
+  "jboss_home": "/opt/wildfly-10.0.0.Final"
+}

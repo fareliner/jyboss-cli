@@ -33,7 +33,7 @@ class CommandHandler(ConnectionEventHandler):
         self._connection = connection
 
     def _cli(self):
-        if self._connection is None or self._connection.jcli is None:
+        if self._connection is None or self._connection.jcli is None or not self._connection.jcli.is_connected():
             raise ContextError("%s: no session in progress, please connect()" % self.__class__.__name__)
         else:
             return self._connection.jcli
@@ -109,19 +109,28 @@ class CommandHandler(ConnectionEventHandler):
             debug("reading model node type %s not supported" % node.type.toString())
             return None
 
-    def _return_success(self, result, callback=None, silent=False):
+    def _return_success(self, result, transform_cb=None, silent=False):
+        """
+        Return an executed response to the caller.
+
+        :param result: the jboss result to transform
+        :param transform_cb: a callback method that can transform the result prior to being returned
+        :param silent: if the response
+        :return: the transformed response
+        """
         node = result.getResponse()
         response = self.dmr_node_to_dict(node)
 
-        if callback is not None:
-            response = callback(response)
+        if transform_cb is not None:
+            response = transform_cb(response)
 
-        if self._connection.context.interactive and not silent:
+        if not (self._cli().is_silent() or silent):
             if response is None:
                 print("ok")
             elif isinstance(response, dict) or isinstance(response, list):
                 print(json.dumps(response, indent=4))
             else:
+                # TODO may want to cater for other types that arrive here ?
                 print(repr(response))
         else:
             return {"response": "ok"} if response is None else {"response": response}
@@ -145,6 +154,7 @@ class BasicCommandHandler(CommandHandler):
         else:
             errm = _extract_errm(result)
             if errm.find('WFLYCTL0062') != -1 and errm.find('WFLYCTL0216') != -1:
+                # TODO snip errm?
                 raise NotFoundError(errm)
             else:
                 raise OperationError(errm)
@@ -185,6 +195,19 @@ class BatchHandler(CommandHandler):
 
     def reset(self):
         self._cli().batch_reset()
+
+    def run(self, silent=False):
+        result = self._cli().cmd('run-batch')
+        if result.isSuccess():
+            return self._return_success(result, silent=silent)
+        else:
+            errm = _extract_errm(result)
+            if errm.find('WFLYCTL0062') != -1 and errm.find('WFLYCTL0216') != -1:
+                raise NotFoundError(errm)
+            elif errm.find('WFLYCTL0062') != -1 and errm.find('WFLYCTL0212') != -1:
+                raise DuplicateResourceError(errm)
+            else:
+                raise OperationError(errm)
 
     def add_cmd(self, batch_cmd):
         self._cli().batch_add_cmd(batch_cmd)

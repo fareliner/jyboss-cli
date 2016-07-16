@@ -5,3 +5,5 @@ jyboss\command.py
 jyboss\context.py
 jyboss\exceptions.py
 jyboss\logging.py
+jyboss\core\__init__.py
+jyboss\core\ansible.py

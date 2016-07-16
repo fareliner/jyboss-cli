@@ -1,6 +1,8 @@
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
 
+from synchronize import make_synchronized
+
 from java.io import OutputStream
 
 try:
@@ -72,17 +74,18 @@ class SyslogOutputStream(OutputStream):
         self.lines = []
 
     def write(self, b):
-        if isinstance(b, int):
-            pass
-        elif isinstance(b, bytearray):
-            pass
+        raise NotImplementedError('SyslogOutputStream.write(byte) is not implemented')
 
-    def write(self, b, off, len):
-        if off == 0 and len == 1:
+    # have to synchronise this otherwise access to the threads writing
+    # to the capture array gets clobbered
+    @make_synchronized
+    def write(self, b, off, length):
+        if off == 0 and length == 1:
             pass
         else:
-            if b[len - 1] == 10: len = len - 1
-            line = "".join(map(chr, b[off:len]))
+            if b[length - 1] == 10:
+                length -= 1
+            line = "".join(map(chr, b[off:length]))
             # also log to syslog as info or errors
             if HAS_SYSLOG:
                 if self.type == SyslogOutputStream.OUT:
