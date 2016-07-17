@@ -36,3 +36,17 @@ class DuplicateResourceError(Exception):
     """ The resource to be created already exists.
     """
     pass
+
+
+class ParameterError(Exception):
+    """
+    error when a wrong parameter was supplied to the module
+    """
+    pass
+
+
+class ProcessingError(Exception):
+    """
+    error processing a module request
+    """
+    pass

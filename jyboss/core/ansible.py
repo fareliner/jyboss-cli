@@ -12,6 +12,9 @@ from itertools import repeat, chain
 
 __metaclass__ = type
 
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
+
 try:
     # Python 2
     from itertools import imap
@@ -280,7 +283,7 @@ def _load_params():
                 '\n{"msg": "Error: Module was not supplied with arguments in a JSON file. Unable to figure out what parameters were passed", "failed": true}')
             sys.exit(1)
 
-    _ANSIBLE_ARGS = buff
+        _ANSIBLE_ARGS = buff
 
     try:
         params = json.loads(buff.decode('utf-8'))
@@ -290,7 +293,9 @@ def _load_params():
             '\n{"msg": "Error: Module unable to decode valid JSON on stdin.  Unable to figure out what parameters were passed", "failed": true}')
         sys.exit(1)
 
-    params = json_dict_unicode_to_bytes(params)
+    if PY2:
+        params = json_dict_unicode_to_bytes(params)
+
     return params
 
 
@@ -300,7 +305,9 @@ class AnsibleModule(object):
     def __init__(self, argument_spec, bypass_checks=False, required_together=None, required_one_of=None,
                  required_if=None):
         self.argument_spec = argument_spec
-        self.params = _load_params()
+
+        self._load_params()
+
         self._CHECK_ARGUMENT_TYPES_DISPATCHER = {
             'str': self._check_type_str,
             'list': self._check_type_list,
@@ -552,19 +559,13 @@ class AnsibleModule(object):
         """ ensure all arguments have the requested type """
         for (k, v) in self.argument_spec.items():
             wanted = v.get('type', None)
-            if k not in self.params:
+
+            # only if we have a wanted field we rampage and fiddle with the value
+            # otherwise it would convert items we want to morph (e.g. param can be a list or single value)
+            if wanted is None or k not in self.params or self.params[k] is None:
                 continue
-            if wanted is None:
-                # Mostly we want to default to str.
-                # For values set to None explicitly, return None instead as
-                # that allows a user to unset a parameter
-                if self.params[k] is None:
-                    continue
-                wanted = 'str'
 
             value = self.params[k]
-            if value is None:
-                continue
 
             try:
                 type_checker = self._CHECK_ARGUMENT_TYPES_DISPATCHER[wanted]
@@ -637,3 +638,12 @@ class AnsibleModule(object):
             count = self._count_terms(check)
             if count > 1:
                 self.fail_json(msg="parameters are mutually exclusive: %s" % (check,))
+
+    def _load_params(self):
+        ''' read the input and set the params attribute.
+
+        This method is for backwards compatibility.  The guts of the function
+        were moved out in 2.1 so that custom modules could read the parameters.
+        '''
+        # debug overrides to read args from file or cmdline
+        self.params = _load_params()

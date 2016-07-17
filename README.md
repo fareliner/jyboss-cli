@@ -13,10 +13,10 @@ Download the packaged [JyBoss module](https://github.com/fareliner/jyboss-cli/re
 Example `pip` Installation:
 
 ```sh
-curl -L -o jyboss-0.0.4.tar.gz \
-     https://github.com/fareliner/jyboss-cli/releases/download/v0.0.1/jyboss-0.0.1.tar.gz
+curl -L -o jyboss-0.0.5.tar.gz \
+     https://github.com/fareliner/jyboss-cli/releases/download/v0.0.5/jyboss-0.0.5.tar.gz
 
-pip install -U jyboss-0.0.4.tar.gz
+pip install -U jyboss-0.0.5.tar.gz
 ```
 
 ### Usage
@@ -75,7 +75,7 @@ import json
 from jyboss import *
 
 # connection takes the same arguments as the static connect() command
-with ServerConnection() as conn:  
+with standalone as conn:  
   # you now have a valid session
   # jyboss context is available and so is the actual Jboss CLI
   print "the jyboss context: ", conn.context

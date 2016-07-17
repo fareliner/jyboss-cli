@@ -1,9 +1,11 @@
 setup.py
 jyboss\__init__.py
 jyboss\cli.py
-jyboss\command.py
 jyboss\context.py
 jyboss\exceptions.py
 jyboss\logging.py
 jyboss\core\__init__.py
 jyboss\core\ansible.py
+jyboss\command\__init__.py
+jyboss\command\core.py
+jyboss\command\undertow.py

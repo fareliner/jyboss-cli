@@ -7,9 +7,10 @@ from jyboss.context import JyBossCLI as _JyBossCLI
 from jyboss.context import ServerConnection as _ServerConnection
 from jyboss.context import EmbeddedConnection as _EmbeddedConnection
 
-from jyboss.command import BasicCommandHandler as _BasicCommandHandler
-from jyboss.command import RawHandler as _RawHandler
-from jyboss.command import BatchHandler as _BatchHandler
+from jyboss.command.core import BasicCommandHandler as _BasicCommandHandler
+from jyboss.command.core import RawHandler as _RawHandler
+from jyboss.command.core import BatchHandler as _BatchHandler
+from jyboss.command.undertow import UndertowCustomFilterModule as _UndertowCustomFilterModule
 
 #
 #
@@ -29,10 +30,13 @@ _base = _BasicCommandHandler()
 _cmd = _RawHandler()
 _batch = _BatchHandler()
 
+undertow_filter = _UndertowCustomFilterModule()
+
 # register command handler with session
 jyboss.register_handler(_base)
 jyboss.register_handler(_cmd)
 jyboss.register_handler(_batch)
+jyboss.register_handler(undertow_filter)
 
 # create shell alias for core functions
 cd = _base.cd
