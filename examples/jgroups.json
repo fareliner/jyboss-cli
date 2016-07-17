@@ -1,7 +1,7 @@
 {
   "facts": true,
   "config_file": "standalone-ha.xml",
-  "mode": "standalone",
-  "embedded": true,
-  "jboss_home": "/opt/wildfly-10.0.0.Final"
+  "domain_mode": false,
+  "embedded_mode": true,
+  "jboss_home": "c:\\dev\\apps\\keycloak\\keycloak-1.9.8.Final"
 }
