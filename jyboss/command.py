@@ -124,16 +124,25 @@ class CommandHandler(ConnectionEventHandler):
         if transform_cb is not None:
             response = transform_cb(response)
 
-        if not (self._cli().is_silent() or silent):
+        if not self._connection.context.is_interactive() or silent:
             if response is None:
-                print("ok")
+                return {'response': 'ok'}
+            elif 'result' in response:
+                return {'response': response['result']}
+            elif 'response' in response:
+                return response
+            else:
+                return {'response': response}
+        else:
+            if response is None:
+                print('ok')
+            elif isinstance(response, dict) and 'result' in response:
+                print(json.dumps({'response': response['result']}, indent=4))
             elif isinstance(response, dict) or isinstance(response, list):
                 print(json.dumps(response, indent=4))
             else:
                 # TODO may want to cater for other types that arrive here ?
                 print(repr(response))
-        else:
-            return {"response": "ok"} if response is None else {"response": response}
 
 
 class BasicCommandHandler(CommandHandler):

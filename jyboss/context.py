@@ -306,11 +306,16 @@ class JyBossCLI(object):
         from .cli import Cli
         return Cli()
 
+    def is_interactive(self):
+        return self.interactive
+
     def noninteractive(self):
         self._set_interactive(False)
+        return self
 
-    def isinteractive(self):
+    def interactive(self):
         self._set_interactive(True)
+        return self
 
     @make_synchronized
     def _set_interactive(self, interactive):
