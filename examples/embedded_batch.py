@@ -3,13 +3,12 @@ from jyboss import *
 
 
 def main():
-    ctx = JyBossCLI.instance()
     # set a jboss home if it is not passed in as either ENV variable or set as system property
-    ctx.jboss_home = 'c:\\dev\\apps\\keycloak\\keycloak-1.9.8.Final'
-    ctx.config_file = 'standalone-ha.xml'
+    jyboss.jboss_home = 'C:\\opt\\jboss\\wildfly-10.0.0.Final'
+    jyboss.config_file = 'standalone-ha.xml'
 
-    ctx.noninteractive()
-    EmbeddedConnection().connect()
+    jyboss.noninteractive()
+    embedded.connect()
     batch()
     batch_add_cmd('/subsystem=jgroups/stack=tcpping:add()')
     batch_add_cmd('/subsystem=jgroups/stack=tcpping/transport=TCP:add(type="TCP",socket-binding=jgroups-tcp)')

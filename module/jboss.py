@@ -1,6 +1,8 @@
 #! /usr/bin/env jython
 # WANT_JSON
 
+# Ansible Module
+
 # Note: If you need to use env to discover where json is, in your inventory
 # file set the ansible_jython_interpreter variable for the hosts you're
 # running this module on ex:
@@ -14,9 +16,10 @@ short_description: Manage jboss container via jboss-cli
 
 import sys
 
-from jyboss import jyboss, cmd, embedded, standalone, undertow_filter
+from jyboss import jyboss, cmd, embedded, standalone, jyboss_undertow_filter, jyboss_extension
 from jyboss.logging import debug
-from jyboss.core.ansible import AnsibleModule
+from jyboss.ansible import AnsibleModule
+from jyboss.command import escape_keys
 
 
 def main():
@@ -69,32 +72,21 @@ def main():
     result = dict(changed=False)
 
     with conn:
-        if ansible.params.get('facts', None):
-            debug('collecting facts')
-            result.setdefault('ansible_facts', {})['jboss'] = cmd('/:read-resource(recursive=true)')['response']
-            # # restructure children
-            # container_children = cmd('/:read-children-types')['response']
-            # if isinstance(container_children, list):
-            #     result['ansible_facts']['children'] = dict()
-            #     for child_name in container_children:
-            #         if child_name in result['ansible_facts']:
-            #             result['ansible_facts']['children'] = result['ansible_facts'][child_name]
-            #             result['ansible_facts'].pop(child_name, None)
+        if ansible.params.get('facts', False):
+            facts = cmd('/:read-resource(recursive=true)')
+            result.setdefault('ansible_facts', {})['jboss'] = escape_keys(facts.get('response', None))
 
-            # container_children = cmd('/:read-children-types')['response']
-            # if isinstance(container_children, list):
-            #     result['ansible_facts']['children'] = dict()
-            #     for child_name in container_children:
-            #         child_values = cmd('/:read-children-names(child-type=%s)' % child_name)['response']
-            #         for child_value in child_values:
-            #             child = cmd('/%s=%s:read-resource(recursive=true)' % (child_name, child_value))['response']
-            #             result['ansible_facts']['children'].setdefault(child_name, []).append(child)
-
-        if ansible.params.get('custom_filter', None) is not None:
-            f_changed, f_changes = undertow_filter.apply(**ansible.params)
-            if f_changed:
+        if ansible.params.get('custom_filter', False):
+            changes = jyboss_undertow_filter.apply(**ansible.params)
+            if changes is not None:
                 result['changed'] = True
-                result.setdefault('changes', {})['custom_filter'] = f_changes
+                result.setdefault('changes', {})['custom_filter'] = changes
+
+        if ansible.params.get('extension', False):
+            changes = jyboss_extension.apply(**ansible.params)
+            if changes is not None:
+                result['changed'] = True
+                result.setdefault('changes', {})['extension'] = changes
 
     ansible.exit_json(**result)
 
@@ -105,6 +97,7 @@ def main():
 #
 #     for line in ctx.silent_streams.err.lines:
 #         info(line)
+
 
 if __name__ == '__main__':
     main()

@@ -1,15 +1,26 @@
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
 
-from java.lang import System, IllegalStateException, IllegalArgumentException
-from java.io import IOException
-from java.net import URI, URISyntaxException
+from jyboss.exceptions import ContextError
 
-# @formatter:off
-from org.jboss.as.cli import CliInitializationException, CommandContext, CommandContextFactory, CommandFormatException, CommandLineException
-from org.jboss.as.cli.impl import CommandContextConfiguration
-from org.jboss.dmr import ModelNode
-# @formatter:on
+try:
+    from java.lang import System, IllegalStateException, IllegalArgumentException
+    from java.io import IOException
+    from java.net import URI, URISyntaxException
+except ImportError as jpe:
+    raise ContextError('Java packages are not available, please run this module with jython.', jpe)
+
+try:
+    # @formatter:off
+    from org.jboss.as.cli import CliInitializationException, CommandContext, CommandContextFactory, CommandFormatException, CommandLineException
+    from org.jboss.as.cli.impl import CommandContextConfiguration
+    from org.jboss.dmr import ModelNode
+    # @formatter:on
+except ImportError as jbe:
+    raise ContextError(
+        'The jboss client library is not present on the python path. Please configure the context classpath (se jyboss documentation).',
+        jbe)
+
 
 class Cli(object):
     """

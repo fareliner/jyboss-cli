@@ -11,10 +11,15 @@ from synchronize import make_synchronized
 from jyboss.exceptions import ContextError, ConnectionError
 from jyboss.logging import debug, warn, SyslogOutputStream
 
-from java.lang import IllegalStateException, IllegalArgumentException, System, ClassLoader, Thread
-from java.io import PrintStream, File
-from java.net import URL, URLClassLoader
-from jarray import array
+try:
+    from java.lang import IllegalStateException, IllegalArgumentException, System, ClassLoader, Thread
+    from java.io import PrintStream, File
+    from java.net import URL, URLClassLoader
+    from jarray import array
+except ImportError as jpe:
+    raise ContextError('Java packages are not available, please run this module with jython.', jpe)
+
+__metaclass__ = type
 
 streams = collections.namedtuple('streams', ['out', 'err'])
 
@@ -54,9 +59,13 @@ def retry(exceptions=None, tries=None, delay=2, backoff=2):
     return wrapper
 
 
-class ExactTypeEqualityMixIn:
+class ExactTypeEqualityMixIn(object):
+    """
+    MixIn class to allow us to simply compare type equality of 2 objects.
+    """
+
     def __init__(self):
-        pass
+        super(ExactTypeEqualityMixIn, self).__init__()
 
     def __eq__(self, other):
         return other is not None and other.__class__ == self.__class__
@@ -196,7 +205,7 @@ class ServerConnection(Connection):
         return 'standalone'
 
 
-class ConnectionEventHandler(object, ExactTypeEqualityMixIn):
+class ConnectionEventHandler(ExactTypeEqualityMixIn):
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -290,11 +299,15 @@ class JyBossCLI(object):
 
         # if the log manager is JUL we need to hack it as it has been initialised prior we got a change to do so,
         # embedded mode will fail if this is not setup properly
-        from java.util.logging import LogManager as JulLogManager
+        try:
+            from java.util.logging import LogManager as JulLogManager
+            from java.lang.reflect import Modifier
+        except ImportError as jpe:
+            raise ContextError('Java packages are not available, please run this module with jython.', jpe)
+
         logManager = JulLogManager.getLogManager()
         if type(logManager) is JulLogManager:
             # need to hack the JUL LogManager
-            from java.lang.reflect import Modifier
             field = logManager.__class__.getDeclaredField("manager")
             field.setAccessible(True)
             modifiersField = field.__class__.getDeclaredField("modifiers")

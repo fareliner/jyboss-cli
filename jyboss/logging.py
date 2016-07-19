@@ -2,8 +2,12 @@
 from __future__ import (absolute_import, division, print_function)
 
 from synchronize import make_synchronized
+from jyboss.exceptions import ContextError
 
-from java.io import OutputStream
+try:
+    from java.io import OutputStream
+except ImportError as jpe:
+    raise ContextError('Java packages are not available, please run this module with jython.', jpe)
 
 try:
     from org.graylog2.syslog4j import SyslogConstants, Syslog
@@ -18,6 +22,8 @@ try:
     # localName ??
 except ImportError:
     HAS_SYSLOG = False
+
+__metaclass__ = type
 
 
 def _log(level, msg):

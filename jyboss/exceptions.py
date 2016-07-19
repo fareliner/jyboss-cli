@@ -3,6 +3,8 @@ from __future__ import (absolute_import, division, print_function)
 
 import sys
 
+__metaclass__ = type
+
 
 class ConnectionError(Exception):
     """ A connection problem was encountered.
@@ -17,7 +19,11 @@ class ConnectionError(Exception):
 class ContextError(Exception):
     """ A problem with a context command is encountered.
     """
-    pass
+
+    def __init__(self, message, cause=None):
+        self.traceback = sys.exc_info()
+        self.cause = cause
+        super(ContextError, self).__init__(message)
 
 
 class OperationError(Exception):

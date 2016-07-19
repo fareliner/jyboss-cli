@@ -1,10 +1,11 @@
 {
-  "config_file": "standalone-ha.xml",
+  "config_file": "standalone.xml",
   "domain_mode": false,
   "embedded_mode": true,
-  "jboss_home": "c:\\opt\\keycloak\\keycloak-1.9.8.Final",
+  "jboss_home": "C:\\opt\\jboss\\wildfly-10.0.0.Final",
   "server_name": "default-server",
   "host_name": "default-host",
+  "facts": false,
   "custom_filter": [
     {
       "name": "proxy-peer",

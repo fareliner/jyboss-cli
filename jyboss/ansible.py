@@ -10,11 +10,6 @@ import datetime
 
 from itertools import repeat, chain
 
-__metaclass__ = type
-
-PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
-
 try:
     # Python 2
     from itertools import imap
@@ -133,6 +128,11 @@ except ImportError:
 
         return _convert(node_or_string)
 
+__metaclass__ = type
+
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
+
 _literal_eval = literal_eval
 
 
@@ -159,11 +159,11 @@ _ANSIBLE_ARGS = None
 
 
 def json_dict_unicode_to_bytes(d, encoding='utf-8'):
-    ''' Recursively convert dict keys and values to byte str
+    """ Recursively convert dict keys and values to byte str
 
         Specialized for json return because this only handles, lists, tuples,
         and dict container types (the containers that the json module returns)
-    '''
+    """
 
     if isinstance(d, unicode):
         return d.encode(encoding)
@@ -178,11 +178,11 @@ def json_dict_unicode_to_bytes(d, encoding='utf-8'):
 
 
 def json_dict_bytes_to_unicode(d, encoding='utf-8'):
-    ''' Recursively convert dict keys and values to byte str
+    """ Recursively convert dict keys and values to byte str
 
         Specialized for json return because this only handles, lists, tuples,
         and dict container types (the containers that the json module returns)
-    '''
+    """
 
     if isinstance(d, bytes):
         return unicode(d, encoding)
