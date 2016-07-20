@@ -16,7 +16,7 @@ short_description: Manage jboss container via jboss-cli
 
 import sys
 
-from jyboss import jyboss, cmd, embedded, standalone, jyboss_undertow_filter, jyboss_extension
+from jyboss import jyboss, cmd, embedded, standalone, jyboss_undertow_filter, jyboss_extension, jyboss_security
 from jyboss.logging import debug
 from jyboss.ansible import AnsibleModule
 from jyboss.command import escape_keys
@@ -76,17 +76,23 @@ def main():
             facts = cmd('/:read-resource(recursive=true)')
             result.setdefault('ansible_facts', {})['jboss'] = escape_keys(facts.get('response', None))
 
-        if ansible.params.get('custom_filter', False):
-            changes = jyboss_undertow_filter.apply(**ansible.params)
-            if changes is not None:
-                result['changed'] = True
-                result.setdefault('changes', {})['custom_filter'] = changes
-
         if ansible.params.get('extension', False):
             changes = jyboss_extension.apply(**ansible.params)
             if changes is not None:
                 result['changed'] = True
                 result.setdefault('changes', {})['extension'] = changes
+
+        if ansible.params.get('security', False):
+            changes = jyboss_security.apply(**ansible.params)
+            if changes is not None:
+                result['changed'] = True
+                result.setdefault('changes', {})['extension'] = changes
+
+    if ansible.params.get('custom_filter', False):
+        changes = jyboss_undertow_filter.apply(**ansible.params)
+        if changes is not None:
+            result['changed'] = True
+            result.setdefault('changes', {})['custom_filter'] = changes
 
     ansible.exit_json(**result)
 

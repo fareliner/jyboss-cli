@@ -1,0 +1,11 @@
+{
+  "config_file": "standalone.xml",
+  "domain_mode": false,
+  "embedded_mode": true,
+  "jboss_home": "C:\\opt\\jboss\\wildfly-10.0.0.Final",
+  "extension": {
+    "name": "org.keycloak.keycloak-adapter-subsystem",
+    "state": "present",
+    "module": "org.keycloak.keycloak-adapter-subsystem"
+  }
+}

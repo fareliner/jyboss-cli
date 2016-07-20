@@ -22,17 +22,13 @@ class ExtensionModule(BaseJBossModule):
         Example:
         extension = [
                 {
-                    'extension': {
-                        'name': 'org.keycloak.keycloak-adapter-subsystem',
-                        'state': 'present',
-                        'module': 'org.keycloak.keycloak-adapter-subsystem'
-                    }
+                    'name': 'org.keycloak.keycloak-adapter-subsystem',
+                    'state': 'present',
+                    'module': 'org.keycloak.keycloak-adapter-subsystem'
                 },
                 {
-                    'extension': {
-                        'name': 'org.keycloak.keycloak-adapter-subsystem',
-                        'state': 'absent'
-                    }
+                    'name': 'org.keycloak.keycloak-adapter-subsystem',
+                    'state': 'absent'
                 }
             ]
 
@@ -50,14 +46,14 @@ class ExtensionModule(BaseJBossModule):
         elif type(extension) is list:
             pass
         else:
-            raise ParameterError('%s provided to %s is not an alowable type' % (extension, self.__class__.__name__))
+            raise ParameterError('%s provided to %s is not an allowable type' % (extension, self.__class__.__name__))
 
         for ext in extension:
 
             state = self._get_param(ext, 'state')
 
             if state not in ['present', 'absent']:
-                raise ParameterError('filter state is not one of [present|absent]')
+                raise ParameterError('Extension state is not one of [present|absent]')
 
             name = self._get_param(ext, 'name')
 

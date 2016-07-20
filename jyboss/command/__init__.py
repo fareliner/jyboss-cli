@@ -11,6 +11,7 @@ from jyboss.command.core import BatchHandler as _BatchHandler
 # management specific handlers
 from jyboss.command.undertow import UndertowCustomFilterModule as _UndertowCustomFilterModule
 from jyboss.command.extension import ExtensionModule as _ExtensionModule
+from jyboss.command.security import SecurityModule as _SecurityModule
 
 __metaclass__ = type
 
@@ -50,3 +51,6 @@ _jyboss.register_handler(jyboss_undertow_filter)
 
 jyboss_extension = _ExtensionModule()
 _jyboss.register_handler(jyboss_extension)
+
+jyboss_security = _SecurityModule()
+_jyboss.register_handler(jyboss_security)

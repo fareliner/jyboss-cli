@@ -9,3 +9,4 @@ jyboss\command\__init__.py
 jyboss\command\core.py
 jyboss\command\undertow.py
 jyboss\command\extension.py
+jyboss\command\security.py

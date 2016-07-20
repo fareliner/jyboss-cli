@@ -100,9 +100,22 @@ def expression_deserializer(obj):
         return obj
 
 
+def converts_to_dmr(obj):
+    """
+    Converts a python dict or list to a jboss dmr string. This function can be used to generate complex jboss cli
+    attribute arguments. See SecurityModule for example use.
+    :param obj: {dict|list} - the dict or list object to turn into a dmr string
+    :return: a dmr string that can be used in the cli commands
+    """
+    return None if obj is None else json.dumps(obj, separators=(',', '=>'))
+
+
 class CommandHandler(ConnectionEventHandler):
     def __init__(self):
         self._connection = None
+        self.escape_keys = escape_keys
+        self.unescape_keys = unescape_keys
+        self.converts_to_dmr = converts_to_dmr
 
     def handle(self, connection):
         debug('%s.handle: cli is %s' % (self.__class__.__name__, repr(connection)))
@@ -332,8 +345,6 @@ class BaseJBossModule(CommandHandler):
             'STRING': self._cast_node_string,
             'BOOLEAN': self._cast_node_boolean
         }
-        self.escape_keys = escape_keys
-        self.unescape_keys = unescape_keys
 
     @staticmethod
     def _cast_node_undefined(n, v):

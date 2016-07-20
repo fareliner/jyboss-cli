@@ -1,0 +1,27 @@
+{
+  "config_file": "standalone.xml",
+  "domain_mode": false,
+  "embedded_mode": true,
+  "jboss_home": "C:\\opt\\jboss\\wildfly-10.0.0.Final",
+  "security": {
+    "security-domain": [
+      {
+        "name": "keycloak",
+        "state": "present",
+        "authentication": {
+          "type": "classic",
+          "login_modules": [
+            {
+              "code": "org.keycloak.adapters.jboss.KeycloakLoginModule",
+              "flag": "required"
+            }
+          ]
+        }
+      },
+      {
+        "name": "keycloak1",
+        "state": "absent"
+      }
+    ]
+  }
+}
