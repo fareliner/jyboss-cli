@@ -12,6 +12,7 @@ from jyboss.command.core import BatchHandler as _BatchHandler
 from jyboss.command.undertow import UndertowCustomFilterModule as _UndertowCustomFilterModule
 from jyboss.command.extension import ExtensionModule as _ExtensionModule
 from jyboss.command.security import SecurityModule as _SecurityModule
+from jyboss.command.keycloak import KeycloakModule as _KeycloakModule
 
 __metaclass__ = type
 
@@ -54,3 +55,6 @@ _jyboss.register_handler(jyboss_extension)
 
 jyboss_security = _SecurityModule()
 _jyboss.register_handler(jyboss_security)
+
+jyboss_keycloak = _KeycloakModule()
+_jyboss.register_handler(jyboss_keycloak)

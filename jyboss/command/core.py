@@ -39,6 +39,13 @@ else:
 __metaclass__ = type
 
 
+class UndefinedType(object):
+    pass
+
+
+undefined = type(UndefinedType())
+
+
 def unescape_keys(d):
     """
     Recursively proceses all dictionary keys and replaces '_' with '-' and '#' with '.' . Used to convert from YAML to
@@ -376,7 +383,7 @@ class BaseJBossModule(CommandHandler):
     @staticmethod
     def _cast_node_boolean(n, v):
         v_a = None if n is None else n.asBoolean()
-        v_t = None if v is None else str(bool(v)).lower()
+        v_t = None if v is None else bool(v)
         return v_a, v_t
 
     def update_attribute(self, parent_path=None, name=None, old_value=None, new_value=None, **kwargs):
@@ -468,17 +475,24 @@ class BaseJBossModule(CommandHandler):
 
         return changes
 
-    def _get_param(self, obj, name):
+    def _get_param(self, obj, name, default=undefined):
         """
         extracts a parameter from the provided configuration object
         :param obj {dict} - the object to check
         :param name {str} - the name of the param to get
+        :param default {any} - will be returned if the object is None or the name is not in the obj
         :return {any} - whatever this param is set to
         """
         if obj is None:
-            raise ParameterError('%s: configuration is null' % self.__class__.__name__)
+            if default == undefined:
+                raise ParameterError('%s: configuration is null' % self.__class__.__name__)
+            else:
+                return default
         elif name not in obj:
-            raise ParameterError('%s: no % s was provided' % (self.__class__.__name__, name))
+            if default == undefined:
+                raise ParameterError('%s: no % s was provided' % (self.__class__.__name__, name))
+            else:
+                return default
         else:
             return obj[name]
 

@@ -13,11 +13,15 @@ Download the packaged [JyBoss module](https://github.com/fareliner/jyboss-cli/re
 Example `pip` Installation:
 
 ```sh
-curl -L -o jyboss-0.0.6.tar.gz \
-     https://github.com/fareliner/jyboss-cli/releases/download/v0.0.6/jyboss-0.0.6.tar.gz
+curl -L -o jyboss-0.0.7.tar.gz \
+     https://github.com/fareliner/jyboss-cli/releases/download/v0.0.7/jyboss-0.0.7.tar.gz
 
-pip install -U jyboss-0.0.6.tar.gz
+pip install -U jyboss-0.0.7.tar.gz
 ```
+
+### Limitations
+
+Requires at least ansible 2.0.2.0 if running the module with become_user due to an ansible bug issue [#14348](https://github.com/ansible/ansible/issues/14348)).
 
 ### Usage
 

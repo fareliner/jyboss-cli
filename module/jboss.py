@@ -16,7 +16,8 @@ short_description: Manage jboss container via jboss-cli
 
 import sys
 
-from jyboss import jyboss, cmd, embedded, standalone, jyboss_undertow_filter, jyboss_extension, jyboss_security
+from jyboss import jyboss, cmd, embedded, standalone
+from jyboss import jyboss_undertow_filter, jyboss_extension, jyboss_security, jyboss_keycloak
 from jyboss.logging import debug
 from jyboss.ansible import AnsibleModule
 from jyboss.command import escape_keys
@@ -46,55 +47,67 @@ def main():
         )
     )
 
-    # set a jboss home if it is not passed in as either ENV variable or set as system property
-    if 'jboss_home' in ansible.params:
-        jyboss.jboss_home = ansible.params['jboss_home']
-        debug('jboss_home set to %s' % jyboss.jboss_home)
-
-    if 'config_file' in ansible.params:
-        jyboss.config_file = ansible.params['config_file']
-        debug('config_file set to %s' % jyboss.config_file)
-
-    if ansible.params.get('domain_mode', False):
-        debug('interact in domain mode')
-    else:
-        debug('interact in standalone mode')
-
-    if ansible.params.get('embedded_mode', False):
-        conn = embedded
-        debug('embedded connect mode')
-    else:
-        conn = standalone
-        debug('server connect mode')
-
-    jyboss.noninteractive()
-
     result = dict(changed=False)
 
-    with conn:
-        if ansible.params.get('facts', False):
-            facts = cmd('/:read-resource(recursive=true)')
-            result.setdefault('ansible_facts', {})['jboss'] = escape_keys(facts.get('response', None))
+    try:
+        # set a jboss home if it is not passed in as either ENV variable or set as system property
+        if 'jboss_home' in ansible.params:
+            jyboss.jboss_home = ansible.params['jboss_home']
+            debug('jboss_home set to %s' % jyboss.jboss_home)
 
-        if ansible.params.get('extension', False):
-            changes = jyboss_extension.apply(**ansible.params)
-            if changes is not None:
-                result['changed'] = True
-                result.setdefault('changes', {})['extension'] = changes
+        if 'config_file' in ansible.params:
+            jyboss.config_file = ansible.params['config_file']
+            debug('config_file set to %s' % jyboss.config_file)
 
-        if ansible.params.get('security', False):
-            changes = jyboss_security.apply(**ansible.params)
-            if changes is not None:
-                result['changed'] = True
-                result.setdefault('changes', {})['extension'] = changes
+        if ansible.params.get('domain_mode', False):
+            debug('interact in domain mode')
+        else:
+            debug('interact in standalone mode')
 
-    if ansible.params.get('custom_filter', False):
-        changes = jyboss_undertow_filter.apply(**ansible.params)
-        if changes is not None:
-            result['changed'] = True
-            result.setdefault('changes', {})['custom_filter'] = changes
+        if ansible.params.get('embedded_mode', False):
+            conn = embedded
+            debug('embedded connect mode')
+        else:
+            conn = standalone
+            debug('server connect mode')
 
-    ansible.exit_json(**result)
+        jyboss.noninteractive()
+
+        with conn:
+            if ansible.params.get('facts', False):
+                facts = cmd('/:read-resource(recursive=true)')
+                result.setdefault('ansible_facts', {})['jboss'] = escape_keys(facts.get('response', None))
+
+            if ansible.params.get('extension', False):
+                changes = jyboss_extension.apply(**ansible.params)
+                if changes is not None:
+                    result['changed'] = True
+                    result.setdefault('changes', {})['extension'] = changes
+
+            if ansible.params.get('security', False):
+                changes = jyboss_security.apply(**ansible.params)
+                if changes is not None:
+                    result['changed'] = True
+                    result.setdefault('changes', {})['security'] = changes
+
+            if ansible.params.get('keycloak', False):
+                changes = jyboss_keycloak.apply(**ansible.params)
+                if changes is not None:
+                    result['changed'] = True
+                    result.setdefault('changes', {})['keycloak'] = changes
+
+            if ansible.params.get('custom_filter', False):
+                changes = jyboss_undertow_filter.apply(**ansible.params)
+                if changes is not None:
+                    result['changed'] = True
+                    result.setdefault('changes', {})['custom_filter'] = changes
+
+        ansible.exit_json(**result)
+    except Exception as err:
+        result['msg'] = err.message
+        # result['failure_details'] = err
+        result['invocation'] = ansible.params
+        ansible.fail_json(**result)
 
 
 # if ctx.silent_streams is not None:

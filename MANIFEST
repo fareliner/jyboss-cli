@@ -10,3 +10,4 @@ jyboss\command\core.py
 jyboss\command\undertow.py
 jyboss\command\extension.py
 jyboss\command\security.py
+jyboss\command\keycloak.py
