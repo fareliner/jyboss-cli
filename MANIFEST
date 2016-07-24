@@ -11,3 +11,5 @@ jyboss\command\undertow.py
 jyboss\command\extension.py
 jyboss\command\security.py
 jyboss\command\keycloak.py
+jyboss\command\ee.py
+jyboss\command\datasources.py

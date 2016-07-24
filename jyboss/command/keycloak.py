@@ -19,11 +19,6 @@ else:
     def iteritems(d):
         return d.iteritems()
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
 
 class KeycloakModule(BaseJBossModule):
     __metaclass__ = ABCMeta

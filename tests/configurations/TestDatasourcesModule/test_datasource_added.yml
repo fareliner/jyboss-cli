@@ -1,0 +1,16 @@
+---
+server_name: default-server
+host_name: default-host
+datasources:
+  data_source:
+    - name: TestDS
+      state: present
+      jndi_name: java:jboss/datasources/TestDS
+      connection_url: "jdbc:h2:mem:unittest;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+      driver_name: h2
+      user_name: sa
+      password: "secret"
+      pool_name: utpool
+      background_validation: yes
+      enabled: yes
+      jta: yes

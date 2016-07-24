@@ -39,7 +39,7 @@ class EEModule(BaseJBossModule):
 
     def apply(self, ee=None, **kwargs):
         """
-        Apply an extension operation:
+        Apply an ee subsystem operation:
 
         Example:
 
@@ -50,7 +50,7 @@ class EEModule(BaseJBossModule):
         changes = []
 
         for key in ee.keys():
-            if key == 'service':
+            if key in self.EE_PARAMS and key == 'service':
                 services = self._format_apply_param(ee['service'])
                 changes += self.apply_ee_service(services)
                 # handle service

@@ -1,0 +1,11 @@
+---
+server_name: default-server
+host_name: default-host
+datasources:
+  data_source:
+    - name: ExampleDS
+      state: present
+      jndi_name: java:jboss/datasources/ExampleDS1
+      user_name: sa
+      password: "secretnew"
+      enabled: no

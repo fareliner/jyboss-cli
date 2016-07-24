@@ -14,6 +14,7 @@ from jyboss.command.undertow import UndertowAjpListenerModule
 
 from jyboss.command.extension import ExtensionModule
 from jyboss.command.ee import EEModule
+from jyboss.command.datasources import DatasourcesModule
 from jyboss.command.security import SecurityModule
 from jyboss.command.keycloak import KeycloakModule
 
