@@ -19,7 +19,14 @@ try:
 except ImportError as jpe:
     raise ContextError('Java packages are not available, please run this module with jython.', jpe)
 
+# Python2 & 3 way to get NoneType
+NoneType = type(None)
+
 __metaclass__ = type
+
+MODE_EMBEDDED = 'embedded'
+
+MODE_STANDALONE = 'standalone'
 
 streams = collections.namedtuple('streams', ['out', 'err'])
 
@@ -59,45 +66,66 @@ def retry(exceptions=None, tries=None, delay=2, backoff=2):
     return wrapper
 
 
-class ExactTypeEqualityMixIn(object):
-    """
-    MixIn class to allow us to simply compare type equality of 2 objects.
-    """
+class ConfigurationChangeHandler(object):
+    __metaclass__ = ABCMeta
 
-    def __init__(self):
-        super(ExactTypeEqualityMixIn, self).__init__()
-
-    def __eq__(self, other):
-        return other is not None and other.__class__ == self.__class__
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
+    @abstractmethod
+    def configuration_changed(self, change_event):
+        pass
 
 
-class Connection(object):
+class ConnectionResource(object):
+    def __init__(self, mode, context=None):
+        if mode is None:
+            ContextError('%s cannot be created without a connection mode' % self.__class__.__name__)
+
+        self.mode = mode
+
+        if context is None:
+            self.context = JyBossContext.instance()
+        else:
+            self.context = context
+
+        self.connection = None  # type: Connection
+
+    def __enter__(self):
+
+        if self.mode == MODE_EMBEDDED:
+            self.connection = EmbeddedConnection(self.context)
+        elif self.mode == MODE_STANDALONE:
+            self.connection = ServerConnection(self.context)
+
+        self.connection.connect()
+
+        return self.connection
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        connection = self.connection
+        connection.disconnect()
+        return False
+
+    def connect(self):
+        self.__enter__()
+
+    def disconnect(self):
+        self.__exit__()
+
+
+class Connection(ConfigurationChangeHandler):
     """
     abstract connection to a jboss server
     """
-
     __metaclass__ = ABCMeta
 
     def __init__(self, context=None):
         if context is None:
-            self.context = JyBossCLI.instance()
+            self.context = JyBossContext.instance()
         else:
             self.context = context
+        # need to register to receive change notifications from the context so we can detect if a connection is in progress
+        self.context.register_change_handler(self)
+        self.context.connection = self
         self.jcli = None
-        self._resource_managed = False
-
-    def __enter__(self):
-        self.connect()
-        self._resource_managed = True
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.disconnect()
-        self._resource_managed = False
-        return False
 
     @abstractmethod
     def _connect(self, cli):
@@ -110,16 +138,17 @@ class Connection(object):
         return
 
     def connect(self):
-        if self._resource_managed:
-            raise ContextError('%s.connect: this resource is already connected' % self.__class__.__name__)
 
-        if self.jcli is not None:
+        # now we are interested in context change events
+        self.context.register_change_handler(self)
+
+        if self.jcli is None:
+            jcli = self.context.create_cli()
+        else:
             if self.jcli.is_connected():
                 raise ContextError('%s.connect: this resource is already connected' % self.__class__.__name__)
             else:
                 jcli = self.jcli
-        else:
-            jcli = self.context.get_jcli_instance()
 
         debug("%s.connect: try to connect, current cli: %s" % (self.__class__.__name__, jcli))
         try:
@@ -136,8 +165,6 @@ class Connection(object):
                 raise e
 
         self.jcli = jcli
-        # also need to make sure the session is propagated to all command handler
-        self.context.observer.publish(self)
 
     def disconnect(self):
         debug("Session.disconnect: try to disconnect %s cli state %s" % (self.get_mode(), self.jcli))
@@ -149,7 +176,12 @@ class Connection(object):
                 pass
             finally:
                 self.jcli = None
-                self.context.observer.publish(None)
+                self.context.unregister_change_handler(self)
+
+    def configuration_changed(self, change):
+        if 'interactive' in change and self.jcli is not None:
+            debug('%s handled: %r' % (self.__class__.__name__, change))
+            # TODO self.jcli.silent = change['interactive']['new_value']
 
 
 class EmbeddedConnection(Connection):
@@ -161,7 +193,9 @@ class EmbeddedConnection(Connection):
         super(EmbeddedConnection, self).__init__(context=context)
 
     def _connect(self, cli):
-        cli.embedded(self.context.get_jboss_home(), self.context.config_file)
+        config_file = self.context.config_file if self.context.config_file is not None else 'standalone.xml'
+
+        cli.embedded(self.context.get_jboss_home(), config_file)
 
     def get_mode(self):
         return 'embedded'
@@ -205,28 +239,19 @@ class ServerConnection(Connection):
         return 'standalone'
 
 
-class ConnectionEventHandler(ExactTypeEqualityMixIn):
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def handle(self, connection):
-        pass
-
-
-class ConnectionEventObserver(object):
+class ConfigurationChangeObserver(object):
     def __init__(self):
-        """
-
-        :rtype: object
-        """
+        self.test = None
         self._handlers = []
 
-    def register_handler(self, handler):
-        """ Register a handler that will get notified when the session in context changes.
+    def register(self, handler):
+        """ Register a handler that will get notified when the configuration in context changes.
         :param handler: the handler to be notified
         :return: True if the handler was appended or False if the handler to be appended was already present
         """
-        if not any(x == handler for x in self._handlers):
+        if not isinstance(handler, ConfigurationChangeHandler):
+            raise ContextError('Cannot register handler of type %r' % type(handler))
+        elif not any(x == handler for x in self._handlers):
             self._handlers.append(handler)
             return True
         else:
@@ -235,48 +260,136 @@ class ConnectionEventObserver(object):
     def handlers(self):
         return self._handlers
 
-    def unregister_handler(self, handler):
+    def unregister(self, handler):
         self._handlers.remove(handler)
 
-    def publish(self, connection):
+    def publish(self, change):
         """ This function will call handler.handle(connection) on every registered handler.
-        :param connection: the connection that has changed
+        :param change: the change
         :return: nothing
         """
-        debug("%s.publish: update connection context" % self.__class__.__name__)
+        debug('%s.publish: %r' % (self.__class__.__name__, change))
         for handler in self._handlers:
-            handler.handle(connection)
+            handler.configuration_changed(change)
 
 
-class JyBossCLI(object):
-    _INSTANCE = None
+class JyBossContext(ConfigurationChangeHandler):
+    """
+    The JyBoss context which manages the bootstrapping of the cli and connection in flight
+    """
+    _DEFAULT_INSTANCE = None
 
-    def __init__(self, jboss_home=None, config_file=None, session_observer=None, interactive=True):
-        if session_observer is None:
-            self.observer = ConnectionEventObserver()
-        else:
-            self.observer = session_observer
-        # add myself to the list of handlers so I can get updates
-        # on what connection is in progress
-        self.observer.register_handler(self)
-        self.connection = None
+    _CliType = None
+
+    _EXCLUDE_FROM_OBSERVATION = [
+        'change_observer',
+        'original_streams',
+        'silent_streams',
+        '_jboss_home_classpath'
+    ]
+
+    def __init__(self, jboss_home=None, config_file=None, interactive=True):
         self.jboss_home = jboss_home
-        self.config_file = config_file if config_file is not None else 'standalone.xml'
+        self.config_file = config_file
         self.original_streams = streams(System.out, System.err)
         self.silent_streams = None
-        self._set_interactive(interactive)
+        self.interactive = interactive
+        self.connection = None
         # TODO save original streams before nuking them
+        self._jboss_home_classpath = None
+        # add myself to the list of handlers so context can handle some of the updates to itself
+        change_observer = ConfigurationChangeObserver()
+        change_observer.register(self)
+        self.change_observer = change_observer
+
+    def __setattr__(self, name, value):
+        """
+        The context item will have a little magic so we can set properties and still be able to notify the change
+        handlers to make adjustments should they need to.
+        :param name: the name of the context parameter that is changed
+        :param value: the value it is changed to
+        :return:
+        """
+        if name not in self._EXCLUDE_FROM_OBSERVATION \
+                and name in self.__dict__ \
+                and hasattr(self, 'change_observer'):
+            old_value = self.__dict__[name]
+            if old_value != value:
+                self.change_observer.publish({name: {'old_value': old_value, 'new_value': value}})
+
+        super(JyBossContext, self).__setattr__(name, value)
 
     @staticmethod
-    def instance(jboss_home=None, config_file=None, session_observer=None, interactive=True):
-        if JyBossCLI._INSTANCE is None:
-            JyBossCLI._INSTANCE = JyBossCLI(jboss_home=jboss_home, config_file=config_file,
-                                            session_observer=session_observer,
-                                            interactive=interactive)
-        return JyBossCLI._INSTANCE
+    def instance():
 
-    def get_jcli_instance(self):
+        if JyBossContext._DEFAULT_INSTANCE is None:
+            JyBossContext._DEFAULT_INSTANCE = JyBossContext()
 
+        return JyBossContext._DEFAULT_INSTANCE
+
+    def create_cli(self):
+        # make sure we only ever load this once
+        if JyBossContext._CliType is None:
+            JyBossContext._CliType = self._load_cli()
+
+        return JyBossContext._CliType()
+
+    @make_synchronized
+    def _set_interactive(self, interactive):
+        # deactivate all handlers
+        if not interactive:
+            debug("disable default JVM output streams")
+            if self.silent_streams is None:
+                self.silent_streams = streams(SyslogOutputStream(), SyslogOutputStream(SyslogOutputStream.ERR))
+            System.out.flush()
+            System.err.flush()
+            System.setOut(PrintStream(self.silent_streams.out, True))
+            System.setErr(PrintStream(self.silent_streams.err, True))
+        else:
+            debug("enable default JVM output streams")
+            System.out.flush()
+            System.err.flush()
+            System.setOut(self.original_streams.out)
+            System.setErr(self.original_streams.err)
+
+        # FIXME boadcast configuration change to connection managers
+
+        if self.connection is not None and self.connection.jcli is not None:
+            self.connection.jcli.set_silent(not interactive)
+
+    def get_jboss_home(self):
+
+        jboss_home = self.jboss_home
+
+        # first check if the jboss home was passed in as java property
+        if jboss_home is None:
+            jboss_home = System.getProperty('jboss.home.dir')
+
+        # if still nothing, try to check the os environment JBOSS_HOME
+        if jboss_home is None:
+            jboss_home = os.environ.get("JBOSS_HOME")
+
+        if jboss_home is None:
+            raise ContextError("jboss_home must be provided to the module context")
+
+        # preserver for later
+        self.jboss_home = jboss_home
+
+        return jboss_home
+
+    def is_connected(self):
+        """ Check if a context is connected
+        :return: True if a connection is available, False otherwise
+        """
+        return self.connection is not None and self.connection.jcli is not None and self.connection.jcli.is_connected()
+
+    def disconnect(self):
+        if self.is_connected():
+            self.connection.disconnect()
+        else:
+            raise ContextError("no session in progress")
+
+    def _load_cli(self):
         try:
             # @formatter:off
             from org.jboss.logmanager import LogManager as JBossLogManager
@@ -285,7 +398,7 @@ class JyBossCLI(object):
             from org.jboss.as.cli import CommandLineException
             # @formatter:on
         except ImportError:
-            self.configure_classpath()
+            self._configure_classpath()
             try:
                 # @formatter:off
                 from org.jboss.logmanager import LogManager as JBossLogManager
@@ -316,56 +429,10 @@ class JyBossCLI(object):
             field.set(None, JBossLogManager())
 
         # now it's safe to load the cli
-        from .cli import Cli
-        return Cli()
+        from .cli import Cli as _Cli
+        return _Cli
 
-    def is_interactive(self):
-        return self.interactive
-
-    def noninteractive(self):
-        self._set_interactive(False)
-        return self
-
-    def interactive(self):
-        self._set_interactive(True)
-        return self
-
-    @make_synchronized
-    def _set_interactive(self, interactive):
-        # deactivate all handlers
-        if not interactive:
-            debug("disable default JVM output streams")
-            if self.silent_streams is None:
-                self.silent_streams = streams(SyslogOutputStream(), SyslogOutputStream(SyslogOutputStream.ERR))
-            System.out.flush()
-            System.err.flush()
-            System.setOut(PrintStream(self.silent_streams.out, True))
-            System.setErr(PrintStream(self.silent_streams.err, True))
-        else:
-            debug("enable default JVM output streams")
-            System.out.flush()
-            System.err.flush()
-            System.setOut(self.original_streams.out)
-            System.setErr(self.original_streams.err)
-
-        # also write through to the actual cli command context
-        if self.connection is not None and self.connection.jcli is not None:
-            self.connection.jcli.set_silent(not interactive)
-
-        self.interactive = interactive
-
-    def get_jboss_home(self):
-        # first check if the jboss home was passed in as java property
-        if self.jboss_home is None:
-            self.jboss_home = System.getProperty('jboss.home.dir')
-
-        # if still nothing, try to check the os environment JBOSS_HOME
-        if self.jboss_home is None:
-            self.jboss_home = os.environ.get("JBOSS_HOME")
-
-        return self.jboss_home
-
-    def configure_classpath(self):
+    def _configure_classpath(self):
         """
         jboss CLI does something dodgy and can't just append the cli.jar to the system path
         sys.path.append(jboss_home + "/bin/client/jboss-cli-client.jar")
@@ -373,61 +440,26 @@ class JyBossCLI(object):
         the current thread context
         """
         jboss_home_str = self.get_jboss_home()
-        if jboss_home_str is None:
-            raise ContextError("jboss_home must be provided to the module context")
 
         jboss_home = File(normalize_dirpath(jboss_home_str))
         if not jboss_home.isDirectory():
             raise ContextError("jboss_home %s is not a directory or does not exist" % jboss_home_str)
-        else:
-            jars = array([], URL)
-            jars.append(File(jboss_home, "/bin/client/jboss-cli-client.jar").toURL())
-            jars.append(File(jboss_home, "/jboss-modules.jar").toURL())
-            current_thread_classloader = Thread.currentThread().getContextClassLoader()
-            updated_classloader = URLClassLoader(jars, current_thread_classloader)
-            Thread.currentThread().setContextClassLoader(updated_classloader)
 
-    def is_connected(self):
-        """ Check if a context is connected
-        :return: True if a connection is available, False otherwise
-        """
-        return self.connection is not None and self.connection.jcli is not None and self.connection.jcli.is_connected()
+        jars = array([], URL)
+        jars.append(File(jboss_home, "/bin/client/jboss-cli-client.jar").toURL())
+        jars.append(File(jboss_home, "/jboss-modules.jar").toURL())
+        current_thread_classloader = Thread.currentThread().getContextClassLoader()
+        updated_classloader = URLClassLoader(jars, current_thread_classloader)
+        Thread.currentThread().setContextClassLoader(updated_classloader)
 
-    def register_handler(self, handler):
-        """ Convinent method to register a handler with the context.
-        :param handler: the handler to be registered
-        :return: see ConnectionEventHandler
-        """
-        handler.interactive = self.interactive
-        return self.observer.register_handler(handler)
+        self._jboss_home_classpath = jboss_home_str
 
-    def unregister_handler(self, handler):
-        """ Convinent method to the removal of a handler registration with the context.
-        :param handler: the handler to be unregistered
-        :return: nothing
-        """
-        return self.observer.unregister_handler(handler)
+    def register_change_handler(self, handler):
+        self.change_observer.register(handler)
 
-    def handle(self, connection):
-        """ Context itself is a connection context handler to manage its own view of connection.
-        :param connection: the connection
-        :return:
-        """
-        self.connection = connection
+    def unregister_change_handler(self, handler):
+        self.change_observer.unregister(handler)
 
-    # TODO should remove this from context
-    @staticmethod
-    def connect(controller_host=None, controller_port=None, admin_username=None, admin_password=None):
-        context = JyBossCLI.instance()
-        if context.is_connected():
-            raise ContextError("session already in progress")
-        else:
-            connection = ServerConnection(controller_host=controller_host, controller_port=controller_port,
-                                          admin_username=admin_username, admin_password=admin_password, context=context)
-            connection.connect()
-
-    def disconnect(self):
-        if self.is_connected():
-            self.connection.disconnect()
-        else:
-            raise ContextError("no session in progress")
+    def configuration_changed(self, change_event):
+        if 'interactive' in change_event and 'new_value' in change_event['interactive']:
+            self._set_interactive(bool(change_event['interactive']['new_value']))

@@ -16,8 +16,8 @@ short_description: Manage jboss container via jboss-cli
 
 import sys
 
-from jyboss import jyboss, cmd, embedded, standalone
-from jyboss import jyboss_undertow_filter, jyboss_extension, jyboss_security, jyboss_keycloak
+from jyboss import jyboss, embedded, standalone
+from jyboss.command import *
 from jyboss.logging import debug
 from jyboss.ansible import AnsibleModule
 from jyboss.command import escape_keys
@@ -76,31 +76,55 @@ def main():
         with conn:
             if ansible.params.get('facts', False):
                 facts = cmd('/:read-resource(recursive=true)')
-                result.setdefault('ansible_facts', {})['jboss'] = escape_keys(facts.get('response', None))
+                result.setdefault('ansible_facts', {})['jboss'] = escape_keys(facts)
 
             if ansible.params.get('extension', False):
-                changes = jyboss_extension.apply(**ansible.params)
+                handler = ExtensionModule(jyboss)
+                changes = handler.apply(**ansible.params)
                 if changes is not None:
                     result['changed'] = True
                     result.setdefault('changes', {})['extension'] = changes
 
             if ansible.params.get('security', False):
-                changes = jyboss_security.apply(**ansible.params)
+                handler = SecurityModule(jyboss)
+                changes = handler.apply(**ansible.params)
                 if changes is not None:
                     result['changed'] = True
                     result.setdefault('changes', {})['security'] = changes
 
             if ansible.params.get('keycloak', False):
-                changes = jyboss_keycloak.apply(**ansible.params)
+                handler = KeycloakModule(jyboss)
+                changes = handler.apply(**ansible.params)
                 if changes is not None:
                     result['changed'] = True
                     result.setdefault('changes', {})['keycloak'] = changes
 
-            if ansible.params.get('custom_filter', False):
-                changes = jyboss_undertow_filter.apply(**ansible.params)
-                if changes is not None:
-                    result['changed'] = True
-                    result.setdefault('changes', {})['custom_filter'] = changes
+            if ansible.params.get('undertow', False):
+                undertow = ansible.params['undertow']
+                if undertow.get('custom_filter', False):
+                    handler = UndertowCustomFilterModule(jyboss)
+                    changes = handler.apply(custom_filter=undertow['custom_filter'], **ansible.params)
+                    if changes is not None:
+                        result['changed'] = True
+                        result.setdefault('changes', {})['custom_filter'] = changes
+                if undertow.get('socket_binding', False):
+                    handler = UndertowSocketBindingModule(jyboss)
+                    changes = handler.apply(socket_binding=undertow['socket_binding'], **ansible.params)
+                    if changes is not None:
+                        result['changed'] = True
+                        result.setdefault('changes', {})['socket_binding'] = changes
+                if undertow.get('http_listener', False):
+                    handler = UndertowHttpListenerModule(jyboss)
+                    changes = handler.apply(http_listener=undertow['http_listener'], **ansible.params)
+                    if changes is not None:
+                        result['changed'] = True
+                        result.setdefault('changes', {})['http_listener'] = changes
+                if undertow.get('ajp_listener', False):
+                    handler = UndertowAjpListenerModule(jyboss)
+                    changes = handler.apply(ajp_listener=undertow['ajp_listener'], **ansible.params)
+                    if changes is not None:
+                        result['changed'] = True
+                        result.setdefault('changes', {})['ajp_listener'] = changes
 
         ansible.exit_json(**result)
     except Exception as err:

@@ -30,6 +30,7 @@ class KeycloakModule(BaseJBossModule):
 
     # TODO add all others from the sources
     KC_REALM_PARAMS = {
+        'realm',
         'allow-any-hostname',
         'client-keystore-password',
         'cors-max-age',
@@ -86,8 +87,8 @@ class KeycloakModule(BaseJBossModule):
         'ssl-required'
     }
 
-    def __init__(self):
-        super(KeycloakModule, self).__init__('/subsystem=keycloak')
+    def __init__(self, context=None):
+        super(KeycloakModule, self).__init__(path='/subsystem=keycloak', context=context)
 
     def apply(self, keycloak=None, **kwargs):
         """
@@ -196,10 +197,10 @@ class KeycloakModule(BaseJBossModule):
 
     def apply_realm_present(self, realm=None):
 
-        changes = []
         name = self._get_param(realm, 'name')
-
         realm_path = '%s/realm=%s' % (self.path, name)
+
+        changes = []
 
         try:
             realm_dmr = self.read_resource_dmr(realm_path, True)
@@ -214,7 +215,7 @@ class KeycloakModule(BaseJBossModule):
 
         except NotFoundError:
             # create the domain and add auth modules if present
-            realm_params = convert_param_to_dmr_args(realm, self.KC_REALM_PARAMS)
+            realm_params = self.convert_to_dmr_params(realm, self.KC_REALM_PARAMS)
 
             self.cmd('%s:add(%s)' % (realm_path, realm_params))
             changes.append({'realm': name, 'action': 'added', 'params': realm_params})
@@ -257,10 +258,11 @@ class KeycloakModule(BaseJBossModule):
 
     def apply_secure_deployment_present(self, deployment):
 
-        changes = []
         name = self._get_param(deployment, 'name')
 
         depl_path = '%s/secure-deployment=%s' % (self.path, name)
+
+        changes = []
 
         try:
             depl_dmr = self.read_resource_dmr(depl_path, True)
@@ -278,7 +280,7 @@ class KeycloakModule(BaseJBossModule):
 
         except NotFoundError:
             # create the domain and add auth modules if present
-            depl_params = convert_param_to_dmr_args(deployment, self.KC_DEPLOYMENT_PARAMS)
+            depl_params = self.convert_to_dmr_params(deployment, self.KC_DEPLOYMENT_PARAMS)
             self.cmd('%s:add(%s)' % (depl_path, depl_params))
 
             if 'credential' in deployment:
@@ -323,19 +325,3 @@ class KeycloakModule(BaseJBossModule):
             return [{'secure-deployment': name, 'action': 'deleted'}]
         except NotFoundError:
             return []
-
-
-def convert_param_to_dmr_args(args, allowable_attributes=None):
-    """
-    Converts a dictionary of parameters into a "string" list that can be used in a add method call on the jboss cli)
-    :param args: {dict} - the argument key/value pair that needs to be turned into a param list
-    :param allowable_attributes:
-    :return: a string list of args formatted for the cli
-    """
-    result = ', '.join(
-        ['%s=%s' % (k, convert_type(v)) for k, v in iteritems(args) if k in allowable_attributes])
-    return result
-
-
-def convert_type(obj):
-    return json.dumps(obj)

@@ -10,10 +10,9 @@ __metaclass__ = type
 
 
 class ExtensionModule(BaseJBossModule):
-    __metaclass__ = ABCMeta
 
-    def __init__(self):
-        super(ExtensionModule, self).__init__('/extension')
+    def __init__(self, context=None):
+        super(ExtensionModule, self).__init__(path='/extension', context=context)
 
     def apply(self, extension=None, **kwargs):
         """
@@ -58,7 +57,7 @@ class ExtensionModule(BaseJBossModule):
             name = self._get_param(ext, 'name')
 
             if state == 'present':
-                module = self._get_param(ext, 'module')
+                module = self._get_param(ext, 'module', None)
                 changes += self.apply_extension_present(name, module)
             elif state == 'absent':
                 changes += self.apply_extension_absent(name)

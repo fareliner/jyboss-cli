@@ -1,15 +1,17 @@
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
 
-from jyboss.context import JyBossCLI as _JyBossCLI
-from jyboss.context import ServerConnection as _ServerConnection
-from jyboss.context import EmbeddedConnection as _EmbeddedConnection
+from jyboss.context import JyBossContext, MODE_EMBEDDED, MODE_STANDALONE
+from jyboss.context import ConnectionResource as _ConnectionResource
+from jyboss.command import   ls, cmd, cd
 
-from jyboss.command import *
+#
+# from jyboss.command import *
 
 __metaclass__ = type
 
-jyboss = _JyBossCLI.instance()
-standalone = _ServerConnection(jyboss)
-embedded = _EmbeddedConnection(jyboss)
+# make default context available to module user
+jyboss = JyBossContext.instance()
+standalone = _ConnectionResource(MODE_STANDALONE, jyboss)
+embedded = _ConnectionResource(MODE_EMBEDDED, jyboss)
 disconnect = jyboss.disconnect

@@ -13,10 +13,10 @@ Download the packaged [JyBoss module](https://github.com/fareliner/jyboss-cli/re
 Example `pip` Installation:
 
 ```sh
-curl -L -o jyboss-0.0.7.tar.gz \
-     https://github.com/fareliner/jyboss-cli/releases/download/v0.0.7/jyboss-0.0.7.tar.gz
+curl -L -o jyboss-0.0.8.tar.gz \
+     https://github.com/fareliner/jyboss-cli/releases/download/v0.0.8/jyboss-0.0.8.tar.gz
 
-pip install -U jyboss-0.0.7.tar.gz
+pip install -U jyboss-0.0.8.tar.gz
 ```
 
 ### Limitations
@@ -97,19 +97,12 @@ with standalone as conn:
 
 #### Syslog
 
-On unix based hosts the jyboss will output internal log messages to syslog. Just copy the `ext/syslog.class` to `$JYTHON_HOME/Lib` and enable the local UDP receiver in your rsyslogd configuration file `/etc/rsyslog.conf`:
+As the jyboss module is primarily written to be used with ansible it cannot write output to the terminal console in noninteractive mode. To be able to still troubleshoot things, the module is configured to write to the user facility in syslog if it is present. Just add below line to the `/etc/rsyslog.conf` file and tail the `/var/log/user` file for useful information.
 
-```properties
-...
-#### MODULES ####
-
-# Provides UDP syslog reception
-$ModLoad imudp
-$UDPServerRun 514
-...
+```sh
+# Log any user messages
+user.*                                                  /var/log/user
 ```
-
-Enable debug for `LOG_USER` location and `tail -f /var/log/messages` for log messages from the jyboss module. This is handy when using this module with ansible where logging to the console is not possible.
 
 
 ### Why You Ask?
@@ -189,4 +182,15 @@ This project uses the standard python setup mechanism. To build a distributable 
 
 ```sh
 jython setup.py sdist --formats=gztar,zip
+```
+
+### Dev Notes
+
+Connect to running jboss server:
+
+```cmd
+set "CLASSPATH=%JAVA_HOME%\lib\jconsole.jar"
+set "CLASSPATH=%CLASSPATH%;%JAVA_HOME%\lib\tools.jar"
+set "CLASSPATH=%CLASSPATH%;%cd%\tests\bin\client\jboss-cli-client.jar"
+jconsole service:jmx:remote+http://wildfly.vagrant.v8:9990
 ```

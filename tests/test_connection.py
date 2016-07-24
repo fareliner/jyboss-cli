@@ -1,26 +1,31 @@
-import unittest
+from tests import *
 from jyboss import *
+from jyboss.exceptions import ContextError
 
 
-class TestConnection(unittest.TestCase):
+class TestConnection(JBossTest):
     def setUp(self):
         print ('Running test %s' % self._testMethodName)
-        ctx = JyBossCLI.instance()
-        ctx.jboss_home = 'c:\\opt\\keycloak\\keycloak-1.9.8.Final'
 
+    @unittest.skip("testing skipping")
+    @jboss_context(mode=MODE_STANDALONE)
     def test_connect_managed(self):
-        with ServerConnection():
+        with self.connection:
             print cd("/")
             print ls()
 
+    @unittest.skip("testing skipping")
+    @jboss_context(mode=MODE_STANDALONE)
     def test_connect_unmanaged(self):
-        connect()
+        self.connection.connect()
         print cd("/")
         print ls()
         disconnect()
 
+    @unittest.skip("testing skipping")
     def test_connection_exists(self):
-        connect()
+        # TODO review test
+        standalone.connect()
         print ls('')
         with self.assertRaises(ContextError):
-            connect()
+            standalone.connect()

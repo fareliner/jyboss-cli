@@ -6,7 +6,7 @@ from abc import ABCMeta, abstractmethod
 
 from jyboss.exceptions import *
 from jyboss.logging import debug
-from jyboss.context import ConnectionEventHandler
+from jyboss.context import ConfigurationChangeHandler, JyBossContext
 
 try:
     from java.lang import IllegalArgumentException
@@ -117,22 +117,43 @@ def converts_to_dmr(obj):
     return None if obj is None else json.dumps(obj, separators=(',', '=>'))
 
 
-class CommandHandler(ConnectionEventHandler):
-    def __init__(self):
-        self._connection = None
+def convert_to_dmr_params(args, allowable_attributes=None):
+    """
+    Converts a dictionary of parameters into a "string" list that can be used in a add method call on the jboss cli)
+    :param args: {dict} - the argument key/value pair that needs to be turned into a param list
+    :param allowable_attributes:
+    :return: a string list of args formatted for the cli
+    """
+    result = ', '.join(
+        ['%s=%s' % (k, convert_type(v)) for k, v in iteritems(args) if k in allowable_attributes])
+    return result
+
+
+def convert_type(obj):
+    return json.dumps(obj)
+
+
+class CommandHandler(ConfigurationChangeHandler):
+    def __init__(self, context=None):
+        super(CommandHandler, self).__init__()
+        if context is None:
+            self.context = JyBossContext.instance()
+        else:
+            self.context = context
         self.escape_keys = escape_keys
         self.unescape_keys = unescape_keys
         self.converts_to_dmr = converts_to_dmr
+        self.convert_to_dmr_params = convert_to_dmr_params
 
-    def handle(self, connection):
-        debug('%s.handle: cli is %s' % (self.__class__.__name__, repr(connection)))
-        self._connection = connection
+    def configuration_changed(self, change):
+        debug('%s.handle: cli is %r' % (self.__class__.__name__, change))
+        # TODO anything the command handler needs to do on change?
 
     def _cli(self):
-        if self._connection is None or self._connection.jcli is None or not self._connection.jcli.is_connected():
+        if not self.context.is_connected():
             raise ContextError('%s: no session in progress, please connect()' % self.__class__.__name__)
         else:
-            return self._connection.jcli
+            return self.context.connection.jcli
 
     def cmd(self, cmd, silent=False):
         result = self._cli().cmd('%s' % cmd)
@@ -164,65 +185,12 @@ class CommandHandler(ConnectionEventHandler):
             else:
                 raise OperationError(errm)
 
-    def dmr_to_python(self, parent=None, node=None):
-        try:  # keeps pycharm happy
-            from org.jboss.dmr import ModelType, ModelNode
-        except ImportError as ipe:
-            raise ContextError(
-                'The jboss client library is not present on the python path. Please configure the context classpath (se jyboss documentation).',
-                ipe)
-
+    def dmr_to_python(self, node=None):
         if node is None:
             return None
-        elif isinstance(node, basestring):
-            # debug('node is a string node')
-            return str(node)
-        elif not isinstance(node, ModelNode):  # ?? and not hasattr(node, 'type'):
-            raise ParameterError(
-                '%s.dmr_to_python: cannot convert dmr node %r to native type' % (self.__class__.__name__, node))
-        elif node.type is ModelType.UNDEFINED:
-            return None
-        elif node.type is ModelType.LIST:
-            node_list = []
-            for item in node.asList():
-                sub_node = self.dmr_to_python(parent=node, node=item)
-                node_list.append(sub_node)
-            return node_list
-        elif node.type is ModelType.DOUBLE:
-            return node.asDouble()
-        elif node.type is ModelType.INT:
-            return node.asInt()
-        elif node.type is ModelType.LONG:
-            return node.asLong()
-        elif node.type is ModelType.BIG_DECIMAL:
-            return node.asBigDecimal()
-        elif node.type is ModelType.BIG_INTEGER:
-            return node.asBigInteger()
-        elif node.type is ModelType.BOOLEAN:
-            return node.asBoolean()
-        elif node.type in [ModelType.STRING, ModelType.TYPE]:
-            return node.asString()
-        elif node.type is ModelType.PROPERTY:
-            prop = node.asProperty()
-            prop_name = prop.getName()
-            prop_value = prop.getValue()
-            if prop_value.isDefined():
-                return {'name': prop_name, 'value': None}
-            else:
-                return {'name': prop_name, 'value': self.dmr_to_python(parent=node, node=prop_value)}
-        elif node.type is ModelType.BOOLEAN:
-            return node.asBoolean()
-        elif node.type is ModelType.EXPRESSION:
-            return node.asString()
-        elif node.type is ModelType.OBJECT:
-            o = node.asObject()
-            children = dict()
-            for key in o.keys():
-                children[key] = self.dmr_to_python(parent=node, node=o.get(key))
-            return children
         else:
-            debug('reading model node type %s not supported' % node.type.toString())
-            return None
+            node_str = node.toJSONString(True)
+            return json.loads(node_str)
 
     def _as_value_pair(self, node):
         pass
@@ -242,15 +210,15 @@ class CommandHandler(ConnectionEventHandler):
         if transform_cb is not None:
             response = transform_cb(response)
 
-        if not self._connection.context.is_interactive() or silent:
+        if not self.context.interactive or silent:
             if response is None:
-                return {'response': 'ok'}
+                return 'ok'
             elif 'result' in response:
-                return {'response': response['result']}
+                return response['result']
             elif 'response' in response:
-                return response
+                return response['response']
             else:
-                return {'response': response}
+                return response
         else:
             if response is None:
                 print('ok')
@@ -342,8 +310,8 @@ class BaseJBossModule(CommandHandler):
     STATE_ABSENT = 'absent'
     STATE_PRESENT = 'present'
 
-    def __init__(self, path):
-        super(BaseJBossModule, self).__init__()
+    def __init__(self, path, context=None):
+        super(BaseJBossModule, self).__init__(context=context)
         self.path = path
         self.ARG_TYPE_DISPATCHER = {
             'UNDEFINED': self._cast_node_undefined,
@@ -530,20 +498,25 @@ class BaseJBossModule(CommandHandler):
 
 
 def _ls_response_magic(response):
-    nr = None
-    if response is not None and response.get('result') is not None:
-        result = response.get('result')
+    if response is None:
+        return None
+    elif not isinstance(response, dict):
+        return response
+    else:
+        result = response.get('result', None)
         # if there are steps its attribute and children, else its just the result
-        if isinstance(result, list):
-            nr = result
+        if result is None:
+            return None
+        elif isinstance(result, list):
+            return result
         elif isinstance(result, dict):
-            children_step = result.get('step_1')
-            attr_step = result.get('step_2')
+            children_step = result.get('step-1')
+            attr_step = result.get('step-2')
             nr = dict()
-            if children_step is not None and children_step.get('result') is not None:
-                nr['children'] = children_step.get('result')
-            if attr_step is not None and attr_step.get('result') is not None:
-                nr['attributes'] = attr_step.get('result')
+            if children_step is not None:
+                nr['children'] = children_step.get('result', None)
+            if attr_step is not None:
+                nr['attributes'] = attr_step.get('result', None)
+            return nr
         else:
-            nr = dict(response=repr(result))
-    return nr
+            return dict(response=repr(result))

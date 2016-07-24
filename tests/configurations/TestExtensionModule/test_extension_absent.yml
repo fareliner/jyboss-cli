@@ -1,0 +1,9 @@
+---
+server_name: default-server
+host_name: default-host
+extension:
+  - name: 'org.jboss.as.clustering.jgroups'
+    state: 'present'
+    module: 'org.jboss.as.clustering.jgroups'
+  - name: 'org.jboss.as.clustering.jgroups'
+    state: 'absent'

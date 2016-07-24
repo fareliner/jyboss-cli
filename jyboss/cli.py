@@ -66,15 +66,16 @@ class Cli(object):
         except URISyntaxException as e:
             raise IllegalStateException("Unable to construct URI.", e)
 
-    def embedded(self, jboss_home, server_config):
+    def embedded(self, jboss_home, server_config=None ):
         self.check_already_connected()
         try:
             self.ctx = CommandContextFactory.getInstance().newCommandContext()
             # TODO factor this out into the instantiation
             # apparently needed in the embedded cli for module loading
             System.setProperty("jboss.home.dir", jboss_home)
+            # --std-out=echo
             self.ctx.handle(
-                "embed-server --std-out=echo --jboss-home=" + jboss_home + " --server-config=" + server_config)
+                "embed-server --jboss-home=" + jboss_home + " --server-config=" + server_config)
         except CliInitializationException as e:
             raise IllegalStateException("Unable to initialize command context.", e)
         except CommandLineException as ce:

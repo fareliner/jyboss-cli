@@ -12,8 +12,8 @@ __metaclass__ = type
 class SecurityModule(BaseJBossModule):
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        super(SecurityModule, self).__init__('/subsystem=security')
+    def __init__(self, context=None):
+        super(SecurityModule, self).__init__(path='/subsystem=security', context=context)
 
     def apply(self, security=None, **kwargs):
         """
