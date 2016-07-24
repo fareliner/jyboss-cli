@@ -33,7 +33,8 @@ class UndertowCustomFilterModule(BaseJBossModule):
     FILTER_REF_PARAMS = {'priority'}
 
     def __init__(self, context=None):
-        super(UndertowCustomFilterModule, self).__init__(path='/subsystem=undertow/configuration=filter', context=context)
+        super(UndertowCustomFilterModule, self).__init__(path='/subsystem=undertow/configuration=filter',
+                                                         context=context)
 
     def __call__(self, filter_conf):
         if 'name' not in filter_conf:
@@ -194,7 +195,8 @@ class UndertowSocketBindingModule(BaseJBossModule):
     BINDING_PARAMS = {'port'}
 
     def __init__(self, context=None):
-        super(UndertowSocketBindingModule, self).__init__(path='/socket-binding-group=%s/socket-binding=%s', context=context)
+        super(UndertowSocketBindingModule, self).__init__(path='/socket-binding-group=%s/socket-binding=%s',
+                                                          context=context)
 
     def __call__(self, binding_conf):
         binding_conf = self.unescape_keys(binding_conf)
@@ -401,9 +403,10 @@ class UndertowAjpListenerModule(UndertowListenerModule):
                        "worker",
                        "write-timeout"]
 
-    def __init__(self):
-        super(UndertowAjpListenerModule, self).__init__(UndertowListenerModule.AJP_LISTENER,
-                                                        UndertowAjpListenerModule.LISTENER_PARAMS)
+    def __init__(self, context=None):
+        super(UndertowAjpListenerModule, self).__init__(listener_type=UndertowListenerModule.AJP_LISTENER,
+                                                        listener_params=UndertowAjpListenerModule.LISTENER_PARAMS,
+                                                        context=context)
 
     def apply(self, ajp_listener=None, **kwargs):
         return super(UndertowAjpListenerModule, self).apply(ajp_listener, **kwargs)
@@ -443,9 +446,10 @@ class UndertowHttpListenerModule(UndertowListenerModule):
                        "worker",
                        "write-timeout"]
 
-    def __init__(self):
-        super(UndertowHttpListenerModule, self).__init__(UndertowListenerModule.HTTP_LISTENER,
-                                                         UndertowAjpListenerModule.LISTENER_PARAMS)
+    def __init__(self, context=None):
+        super(UndertowHttpListenerModule, self).__init__(listener_type=UndertowListenerModule.HTTP_LISTENER,
+                                                         listener_params=UndertowAjpListenerModule.LISTENER_PARAMS,
+                                                         context=context)
 
     def apply(self, http_listener=None, **kwargs):
         return super(UndertowHttpListenerModule, self).apply(http_listener, **kwargs)

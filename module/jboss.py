@@ -75,10 +75,12 @@ def main():
 
         with conn:
             if ansible.params.get('facts', False):
+                debug('jyboss.ansible: collecting facts')
                 facts = cmd('/:read-resource(recursive=true)')
                 result.setdefault('ansible_facts', {})['jboss'] = escape_keys(facts)
 
             if ansible.params.get('extension', False):
+                debug('jyboss.ansible: process extensions')
                 handler = ExtensionModule(jyboss)
                 changes = handler.apply(**ansible.params)
                 if changes is not None:
@@ -86,6 +88,7 @@ def main():
                     result.setdefault('changes', {})['extension'] = changes
 
             if ansible.params.get('security', False):
+                debug('jyboss.ansible: process security')
                 handler = SecurityModule(jyboss)
                 changes = handler.apply(**ansible.params)
                 if changes is not None:
@@ -93,6 +96,7 @@ def main():
                     result.setdefault('changes', {})['security'] = changes
 
             if ansible.params.get('keycloak', False):
+                debug('jyboss.ansible: process keycloak')
                 handler = KeycloakModule(jyboss)
                 changes = handler.apply(**ansible.params)
                 if changes is not None:
@@ -102,24 +106,28 @@ def main():
             if ansible.params.get('undertow', False):
                 undertow = ansible.params['undertow']
                 if undertow.get('custom_filter', False):
+                    debug('jyboss.ansible: process custom filters')
                     handler = UndertowCustomFilterModule(jyboss)
                     changes = handler.apply(custom_filter=undertow['custom_filter'], **ansible.params)
                     if changes is not None:
                         result['changed'] = True
                         result.setdefault('changes', {})['custom_filter'] = changes
                 if undertow.get('socket_binding', False):
+                    debug('jyboss.ansible: process socket bindings')
                     handler = UndertowSocketBindingModule(jyboss)
                     changes = handler.apply(socket_binding=undertow['socket_binding'], **ansible.params)
                     if changes is not None:
                         result['changed'] = True
                         result.setdefault('changes', {})['socket_binding'] = changes
                 if undertow.get('http_listener', False):
+                    debug('jyboss.ansible: process http listener')
                     handler = UndertowHttpListenerModule(jyboss)
                     changes = handler.apply(http_listener=undertow['http_listener'], **ansible.params)
                     if changes is not None:
                         result['changed'] = True
                         result.setdefault('changes', {})['http_listener'] = changes
                 if undertow.get('ajp_listener', False):
+                    debug('jyboss.ansible: process ajp listener')
                     handler = UndertowAjpListenerModule(jyboss)
                     changes = handler.apply(ajp_listener=undertow['ajp_listener'], **ansible.params)
                     if changes is not None:
