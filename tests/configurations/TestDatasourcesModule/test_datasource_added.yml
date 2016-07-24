@@ -1,6 +1,4 @@
 ---
-server_name: default-server
-host_name: default-host
 datasources:
   data_source:
     - name: TestDS

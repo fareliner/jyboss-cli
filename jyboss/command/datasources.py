@@ -87,6 +87,20 @@ class DatasourcesModule(BaseJBossModule):
         'validate-on-match'
     ]
 
+    JDBC_DRIVER_PARAMS = [
+        'deployment-name',
+        'driver-class-name',
+        'driver-datasource-class-name',
+        'driver-major-version',
+        'driver-minor-version',
+        'driver-module-name',
+        'driver-name',
+        'driver-xa-datasource-class-name',
+        'module-slot',
+        'profile',
+        'xa-datasource-class'
+    ]
+
     def __init__(self, context=None):
         super(DatasourcesModule, self).__init__(path='/subsystem=datasources', context=context)
 
@@ -100,10 +114,12 @@ class DatasourcesModule(BaseJBossModule):
         changes = []
 
         for key in datasources.keys():
-            if key in self.SUBSYSTEM_PARAMS and key == 'data-source':
+            if key == 'data-source':
                 datasources = self._format_apply_param(datasources['data-source'])
                 changes += self.apply_datasources(datasources)
-                # handle service
+            elif key == 'jdbc-driver':
+                drivers = self._format_apply_param(datasources['jdbc-driver'])
+                changes += self.apply_jdbc_drivers(drivers)
 
         if len(changes) > 0:
             changes = {
@@ -163,5 +179,62 @@ class DatasourcesModule(BaseJBossModule):
             ds_params = self.convert_to_dmr_params(datasource, self.DATASOURCE_PARAMS)
             self.cmd('%s/data-source=%s:add(%s)' % (self.path, name, ds_params))
             changes.append({'datasource': name, 'action': 'added', 'params': ds_params})
+
+        return changes
+
+    # JDBC Driver
+    def apply_jdbc_drivers(self, jdbc_drivers):
+
+        changes = []
+        for jdbc_driver in jdbc_drivers:
+
+            name = self._get_param(jdbc_driver, 'name')
+
+            state = self._get_param(jdbc_driver, 'state')
+
+            if state not in ['present', 'absent']:
+                raise ParameterError('The jdbc driver state is not one of [present|absent]')
+
+            if state == 'present':
+                changes += self.apply_jdbc_driver_present(name, jdbc_driver)
+            elif state == 'absent':
+                changes += self.apply_jdbc_driver_absent(name)
+
+        return changes
+
+    def apply_jdbc_driver_absent(self, name):
+
+        try:
+            self.cmd('%s/jdbc-driver=%s:remove()' % (self.path, name))
+            return [{'jdbc-driver': name, 'action': 'deleted'}]
+        except NotFoundError:
+            return []
+
+    def apply_jdbc_driver_present(self, name, jdbc_driver):
+
+        jdbc_driver_path = '%s/jdbc-driver=%s' % (self.path, name)
+
+        changes = []
+        try:
+            jdbc_driver_dmr = self.read_resource_dmr(jdbc_driver_path)
+            # update jdbc_driver
+            fc = dict(
+                (k, v) for (k, v) in iteritems(jdbc_driver) if k in self.JDBC_DRIVER_PARAMS)
+            a_changes = self._sync_attributes(parent_node=jdbc_driver_dmr,
+                                              parent_path=jdbc_driver_path,
+                                              target_state=fc,
+                                              allowable_attributes=self.JDBC_DRIVER_PARAMS)
+            if len(a_changes) > 0:
+                changes.append({'jdbc-driver': name, 'action': 'updated', 'changes': a_changes})
+
+        except NotFoundError:
+            # little hack to maintain sanity, for some reason one has to supply the name of the driver in the list of
+            # parameters again, the param itself appears to be thrown away however
+            if 'driver-name' not in jdbc_driver:
+                jdbc_driver['driver-name'] = name
+
+            jdbc_driver_params = self.convert_to_dmr_params(jdbc_driver, self.JDBC_DRIVER_PARAMS)
+            self.cmd('%s/jdbc-driver=%s:add(%s)' % (self.path, name, jdbc_driver_params))
+            changes.append({'jdbc-driver': name, 'action': 'added', 'params': jdbc_driver_params})
 
         return changes

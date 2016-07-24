@@ -327,7 +327,8 @@ class BaseJBossModule(CommandHandler):
 
     @staticmethod
     def _cast_node_undefined(n, v):
-        if n is None:
+        if n is None or not n.isDefined or (n.type == n.type.UNDEFINED) or (
+                hasattr(n, 'type') and n.isDefined() and n.type == n.type.OBJECT):
             v_a = None
         else:
             raise ParameterError('Node has a undefined type but contains some value: %r' % n)

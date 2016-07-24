@@ -1,0 +1,12 @@
+---
+datasources:
+  jdbc_driver:
+    - name: h2e
+      state: present
+      driver_module_name: com.h2database.h2
+      driver_class_name: org.h2.Driver
+      driver_xa_datasource_class_name: org.h2.jdbcx.JdbcDataSource
+      deployment_name: H2 Test JDBC Driver
+      driver_major_version: 1
+      driver_minor_version: 3
+      module_slot: main

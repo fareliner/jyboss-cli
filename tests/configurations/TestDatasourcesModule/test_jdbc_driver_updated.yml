@@ -1,0 +1,6 @@
+---
+datasources:
+  jdbc_driver:
+    - name: h2e
+      state: present
+      driver_module_name: com.h2database.h2

@@ -1,0 +1,5 @@
+---
+datasources:
+  jdbc_driver:
+    - name: h2e
+      state: absent
