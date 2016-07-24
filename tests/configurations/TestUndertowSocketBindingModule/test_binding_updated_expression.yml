@@ -1,0 +1,6 @@
+---
+socket_binding:
+  - name: https
+    state: present
+    socket_binding_group_name: standard-sockets
+    port: 'expression "${jboss.https.port:12311}"'

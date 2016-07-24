@@ -1,0 +1,5 @@
+---
+socket_binding:
+  - name: proxy-https
+    state: absent
+    socket_binding_group_name: standard-sockets

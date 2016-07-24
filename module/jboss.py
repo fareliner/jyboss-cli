@@ -71,7 +71,7 @@ def main():
             conn = standalone
             debug('server connect mode')
 
-        jyboss.noninteractive()
+        jyboss.interactive = False
 
         with conn:
             if ansible.params.get('facts', False):

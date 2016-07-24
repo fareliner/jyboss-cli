@@ -130,7 +130,10 @@ def convert_to_dmr_params(args, allowable_attributes=None):
 
 
 def convert_type(obj):
-    return json.dumps(obj)
+    if isinstance(obj, basestring) and str(obj).startswith('expression'):
+        return obj
+    else:
+        return json.dumps(obj)
 
 
 class CommandHandler(ConfigurationChangeHandler):
@@ -318,7 +321,8 @@ class BaseJBossModule(CommandHandler):
             'INT': self._cast_node_int,
             'LONG': self._cast_node_long,
             'STRING': self._cast_node_string,
-            'BOOLEAN': self._cast_node_boolean
+            'BOOLEAN': self._cast_node_boolean,
+            'EXPRESSION': self._cast_node_expression
         }
 
     @staticmethod
@@ -352,6 +356,24 @@ class BaseJBossModule(CommandHandler):
     def _cast_node_boolean(n, v):
         v_a = None if n is None else n.asBoolean()
         v_t = None if v is None else bool(v)
+        return v_a, v_t
+
+    @staticmethod
+    def _cast_node_expression(n, v):
+        if n is None:
+            v_a = None
+        else:
+            # FIXME as model node?
+            exp = n.asExpression()
+            exp_val = exp.getExpressionString()
+            v_a = 'expression %s' % exp_val
+
+        # check if v start with lower(expression)
+        if v is None:
+            v_t = None
+        else:
+            v_t = str(v)
+
         return v_a, v_t
 
     def update_attribute(self, parent_path=None, name=None, old_value=None, new_value=None, **kwargs):

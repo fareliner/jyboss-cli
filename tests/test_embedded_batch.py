@@ -18,4 +18,4 @@ class TestEmbeddedBatch(JBossTest):
             batch.add_cmd('/subsystem=jgroups/stack=tcpping:add()')
             batch.add_cmd('/subsystem=jgroups/stack=tcpping/transport=TCP:add(type="TCP",socket-binding=jgroups-tcp)')
             r = batch.run(silent=True)
-            print('noninteractive result: \n%s' % json.dumps(r, indent=4))
+            print('result: \n%s' % json.dumps(r, indent=4))

@@ -1,0 +1,6 @@
+---
+socket_binding:
+  - name: proxy-https
+    state: present
+    socket_binding_group_name: standard-sockets
+    port: 8326

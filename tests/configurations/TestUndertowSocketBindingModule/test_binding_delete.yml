@@ -1,0 +1,5 @@
+---
+socket_binding:
+  - name: https
+    state: absent
+    socket_binding_group_name: standard-sockets

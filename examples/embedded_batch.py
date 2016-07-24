@@ -6,8 +6,8 @@ def main():
     # set a jboss home if it is not passed in as either ENV variable or set as system property
     jyboss.jboss_home = 'C:\\opt\\jboss\\wildfly-10.0.0.Final'
     jyboss.config_file = 'standalone-ha.xml'
+    jyboss.interactive = False
 
-    jyboss.noninteractive()
     embedded.connect()
     batch()
     batch.add_cmd('/subsystem=jgroups/stack=tcpping:add()')
