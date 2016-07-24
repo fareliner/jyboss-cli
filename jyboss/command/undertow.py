@@ -42,7 +42,7 @@ class UndertowCustomFilterModule(BaseJBossModule):
 
     def apply(self, server_name=None, host_name=None, custom_filter=None, **kwargs):
 
-        custom_filter = self.unescape_keys(custom_filter)
+        custom_filter = self._format_apply_param(custom_filter)
 
         if server_name is None:
             if 'server_name' in kwargs:
@@ -57,14 +57,6 @@ class UndertowCustomFilterModule(BaseJBossModule):
                 raise ParameterError('The undertow custom-filter module requires a host_name argument')
 
         changes = []
-
-        if type(custom_filter) is dict:
-            custom_filter = [custom_filter]
-        elif type(custom_filter) is list:
-            pass
-        else:
-            raise ParameterError(
-                '%s provided to %s is not an allowable type' % (custom_filter, self.__class__.__name__))
 
         for filter_config in custom_filter:
 
@@ -199,7 +191,9 @@ class UndertowSocketBindingModule(BaseJBossModule):
                                                           context=context)
 
     def __call__(self, binding_conf):
+
         binding_conf = self.unescape_keys(binding_conf)
+
         if 'name' not in binding_conf:
             raise ParameterError('provided socket binding name is null')
 
@@ -208,16 +202,7 @@ class UndertowSocketBindingModule(BaseJBossModule):
 
     def apply(self, socket_binding=None, **kwargs):
 
-        socket_binding = self.unescape_keys(socket_binding)
-
-        if isinstance(socket_binding, dict):
-            socket_bindings = [socket_binding]
-        elif isinstance(socket_binding, list):
-            socket_bindings = socket_binding
-        else:
-            raise ParameterError(
-                '%s.apply(undertow.socket-binding:%s): The socket binding configuration is not valid.' % (
-                    self.__class__.__name__, type(socket_binding)))
+        socket_bindings = self._format_apply_param(socket_binding)
 
         changes = []
 
@@ -300,16 +285,7 @@ class UndertowListenerModule(BaseJBossModule):
             else:
                 raise ParameterError('The undertow %s module requires a server_name argument' % self.listener_type)
 
-        listener_config = self.unescape_keys(listener_config)
-
-        if isinstance(listener_config, dict):
-            listener_configs = [listener_config]
-        elif isinstance(listener_config, list):
-            listener_configs = listener_config
-        else:
-            raise ParameterError(
-                '%s.apply(keycloak.realm:%s): The %s configuration is not valid.' % (
-                    self.__class__.__name__, type(listener_config), self.listener_type))
+        listener_configs = self._format_apply_param(listener_config)
 
         changes = []
 

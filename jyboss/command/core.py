@@ -363,15 +363,15 @@ class BaseJBossModule(CommandHandler):
         if n is None:
             v_a = None
         else:
-            # FIXME as model node?
             exp = n.asExpression()
             exp_val = exp.getExpressionString()
-            v_a = 'expression %s' % exp_val
+            v_a = str('expression %s' % exp_val)
 
         # check if v start with lower(expression)
         if v is None:
             v_t = None
         else:
+            # TODO should we validate expression syntax?
             v_t = str(v)
 
         return v_a, v_t
@@ -448,8 +448,6 @@ class BaseJBossModule(CommandHandler):
             if attr_type not in self.ARG_TYPE_DISPATCHER:
                 raise ParameterError('%s.sync_attr: synchronizing attribute %s of type %s is not supported' % (
                     self.__class__.__name__, k_t, attr_type))
-            else:
-                debug('%s.sync_attr: check param %s of type %s' % (self.__class__.__name__, k_t, attr_type))
 
             dp = self.ARG_TYPE_DISPATCHER[attr_type]
             v_a, v_t = dp(attr, v_t)
@@ -507,6 +505,21 @@ class BaseJBossModule(CommandHandler):
         """
         node = self.read_resource_dmr(resource_path, recursive)
         return self.dmr_to_python(node=node)
+
+    def _format_apply_param(self, arg):
+        """
+        Apply parameters can be either dicts of list of dicts, this method will simply torn it into a list.
+        :param arg: the apply param to format
+        :return: a list of apply parameters
+        """
+        if type(arg) is dict:
+            result = [arg]
+        elif type(arg) is list:
+            result = arg
+        else:
+            raise ParameterError('%s provided to %s is not an allowable type' % (ee, self.__class__.__name__))
+
+        return self.unescape_keys(result)
 
     @abstractmethod
     def apply(self, **kwargs):

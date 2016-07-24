@@ -1,0 +1,7 @@
+---
+server_name: default-server
+host_name: default-host
+ee:
+  service:
+    - name: 'default-bindings'
+      datasource: null

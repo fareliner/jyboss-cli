@@ -1,8 +1,6 @@
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
 
-from abc import ABCMeta
-
 from jyboss.exceptions import ParameterError, NotFoundError
 from jyboss.command.core import BaseJBossModule
 
@@ -10,7 +8,6 @@ __metaclass__ = type
 
 
 class ExtensionModule(BaseJBossModule):
-
     def __init__(self, context=None):
         super(ExtensionModule, self).__init__(path='/extension', context=context)
 
@@ -36,16 +33,9 @@ class ExtensionModule(BaseJBossModule):
         :return: changed flag and a list of changes that have been applied
         """
 
-        extension = self.unescape_keys(extension)
+        extension = self._format_apply_param(extension)
 
         changes = []
-
-        if type(extension) is dict:
-            extension = [extension]
-        elif type(extension) is list:
-            pass
-        else:
-            raise ParameterError('%s provided to %s is not an allowable type' % (extension, self.__class__.__name__))
 
         for ext in extension:
 
