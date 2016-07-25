@@ -1,0 +1,14 @@
+---
+module:
+  - name: 'some.module'
+    state: 'present'
+    slot: '0.9.30'
+    dependencies:
+      - javax.api
+      - javax.transaction.api
+  - name: 'some.module'
+    state: 'absent'
+    slot: '0.9.30'
+  - name: 'some.module'
+    state: 'absent'
+    slot: '0.9.30'

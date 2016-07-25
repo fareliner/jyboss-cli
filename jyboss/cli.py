@@ -1,7 +1,7 @@
 # Make coding more python3-ish
 from __future__ import (absolute_import, division, print_function)
 
-from jyboss.exceptions import ContextError
+from jyboss.exceptions import ContextError, CommandError
 
 try:
     from java.lang import System, IllegalStateException, IllegalArgumentException
@@ -139,7 +139,7 @@ class Cli(object):
                 self.ctx.handle(cli_command)
                 return Result(cli_command, exit_code=self.ctx.getExitCode())
             except CommandLineException as cle:
-                raise IllegalArgumentException("Error handling command: %s" % cli_command, cle)
+                raise CommandError("Error handling command: %s" % cli_command, cle)
         except IOException as ioe:
             raise IllegalStateException("Unable to send command " + cli_command + " to server.", ioe)
 

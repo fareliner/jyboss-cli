@@ -9,5 +9,6 @@ setup(
     requires=['simplejson', 'PyYAML'],
     py_modules=['jyboss.context', 'jyboss.cli', 'jyboss.exceptions', 'jyboss.logging', 'jyboss.command.core',
                 'jyboss.command.undertow', 'jyboss.command.extension', 'jyboss.command.security',
-                'jyboss.command.keycloak', 'jyboss.command.ee', 'jyboss.command.datasources', 'jyboss.ansible']
+                'jyboss.command.keycloak', 'jyboss.command.ee', 'jyboss.command.datasources', 'jyboss.command.module',
+                'jyboss.ansible']
 )

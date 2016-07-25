@@ -134,6 +134,30 @@ def main():
                         result['changed'] = True
                         result.setdefault('changes', {})['ajp_listener'] = changes
 
+                if ansible.params.get('ee', False):
+                    debug('jyboss.ansible: process ee')
+                    handler = EEModule(jyboss)
+                    changes = handler.apply(**ansible.params)
+                    if changes is not None:
+                        result['changed'] = True
+                        result.setdefault('changes', {})['ee'] = changes
+
+                if ansible.params.get('module', False):
+                    debug('jyboss.ansible: process module')
+                    handler = ModuleModule(jyboss)
+                    changes = handler.apply(**ansible.params)
+                    if changes is not None:
+                        result['changed'] = True
+                        result.setdefault('changes', {})['module'] = changes
+
+                if ansible.params.get('datasources', False):
+                    debug('jyboss.ansible: process datasources')
+                    handler = DatasourcesModule(jyboss)
+                    changes = handler.apply(**ansible.params)
+                    if changes is not None:
+                        result['changed'] = True
+                        result.setdefault('changes', {})['datasources'] = changes
+
         ansible.exit_json(**result)
     except Exception as err:
         result['msg'] = err.message

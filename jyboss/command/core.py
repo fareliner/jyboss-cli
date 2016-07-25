@@ -518,7 +518,7 @@ class BaseJBossModule(CommandHandler):
         elif type(arg) is list:
             result = arg
         else:
-            raise ParameterError('%s provided to %s is not an allowable type' % (ee, self.__class__.__name__))
+            raise ParameterError('%s provided to %s is not an allowable type' % (type(arg), self.__class__.__name__))
 
         return self.unescape_keys(result)
 

@@ -56,3 +56,10 @@ class ProcessingError(Exception):
     error processing a module request
     """
     pass
+
+
+class CommandError(Exception):
+    def __init__(self, message, cause=None):
+        self.traceback = sys.exc_info()
+        self.cause = cause
+        super(CommandError, self).__init__(message)

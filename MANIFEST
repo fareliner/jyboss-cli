@@ -13,3 +13,4 @@ jyboss\command\security.py
 jyboss\command\keycloak.py
 jyboss\command\ee.py
 jyboss\command\datasources.py
+jyboss\command\module.py
