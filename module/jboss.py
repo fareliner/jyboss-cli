@@ -21,6 +21,7 @@ from jyboss.command import *
 from jyboss.logging import debug
 from jyboss.ansible import AnsibleModule
 from jyboss.command import escape_keys
+from jyboss.exceptions import NotFoundError
 
 
 def main():
@@ -76,8 +77,22 @@ def main():
         with conn:
             if ansible.params.get('facts', False):
                 debug('jyboss.ansible: collecting facts')
-                facts = cmd('/:read-resource(recursive=true)')
-                result.setdefault('ansible_facts', {})['jboss'] = escape_keys(facts)
+                facter = ansible.params['facts']
+                fact_path = '/'
+                fact_name = 'jboss'
+                fact_recursive = True
+                if isinstance(facter, dict):
+                    if 'path' in facter:
+                        fact_path = facter['path']
+                    if 'name' in facter:
+                        fact_name = facter['name']
+                    if 'recursive' in facter:
+                        fact_recursive = bool(facter['recursive'])
+                try:
+                    facts = cmd('%s:read-resource(recursive=%s)' % (fact_path, str(fact_recursive).lower()))
+                    result.setdefault('ansible_facts', {})[fact_name] = escape_keys(facts)
+                except NotFoundError:
+                    pass
 
             if ansible.params.get('extension', False):
                 debug('jyboss.ansible: process extensions')
@@ -134,29 +149,41 @@ def main():
                         result['changed'] = True
                         result.setdefault('changes', {})['ajp_listener'] = changes
 
-                if ansible.params.get('ee', False):
-                    debug('jyboss.ansible: process ee')
-                    handler = EEModule(jyboss)
-                    changes = handler.apply(**ansible.params)
-                    if changes is not None:
-                        result['changed'] = True
-                        result.setdefault('changes', {})['ee'] = changes
+            if ansible.params.get('ee', False):
+                debug('jyboss.ansible: process ee')
+                handler = EEModule(jyboss)
+                changes = handler.apply(**ansible.params)
+                if changes is not None:
+                    result['changed'] = True
+                    result.setdefault('changes', {})['ee'] = changes
 
-                if ansible.params.get('module', False):
-                    debug('jyboss.ansible: process module')
-                    handler = ModuleModule(jyboss)
-                    changes = handler.apply(**ansible.params)
-                    if changes is not None:
-                        result['changed'] = True
-                        result.setdefault('changes', {})['module'] = changes
+            if ansible.params.get('module', False):
+                debug('jyboss.ansible: process module')
+                handler = ModuleModule(jyboss)
+                changes = handler.apply(**ansible.params)
+                if changes is not None:
+                    result['changed'] = True
+                    result.setdefault('changes', {})['module'] = changes
 
-                if ansible.params.get('datasources', False):
-                    debug('jyboss.ansible: process datasources')
-                    handler = DatasourcesModule(jyboss)
-                    changes = handler.apply(**ansible.params)
-                    if changes is not None:
-                        result['changed'] = True
-                        result.setdefault('changes', {})['datasources'] = changes
+            if ansible.params.get('datasources', False):
+                debug('jyboss.ansible: process datasources')
+                handler = DatasourcesModule(jyboss)
+                changes = handler.apply(**ansible.params)
+                if changes is not None:
+                    result['changed'] = True
+                    result.setdefault('changes', {})['datasources'] = changes
+
+            if ansible.params.get('deployment', False):
+                debug('jyboss.ansible: process deployment')
+                handler = DeploymentModule(jyboss)
+                changes = handler.apply(**ansible.params)
+                if changes is not None:
+                    result['changed'] = True
+                    result.setdefault('changes', {})['deployment'] = changes
+
+            if ansible.params.get('reload', False):
+                cmd('/:reload()')
+
 
         ansible.exit_json(**result)
     except Exception as err:

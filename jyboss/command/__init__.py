@@ -18,6 +18,7 @@ from jyboss.command.datasources import DatasourcesModule
 from jyboss.command.module import ModuleModule
 from jyboss.command.security import SecurityModule
 from jyboss.command.keycloak import KeycloakModule
+from jyboss.command.deployment import DeploymentModule
 
 __metaclass__ = type
 

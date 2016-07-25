@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division, print_function)
 
 from jyboss.exceptions import ParameterError, NotFoundError
 from jyboss.command.core import BaseJBossModule
+from jyboss.logging import debug
 
 __metaclass__ = type
 
@@ -57,7 +58,7 @@ class DatasourcesModule(BaseJBossModule):
         'min-pool-size',
         'new-connection-sql',
         'password',
-        'pool-name',
+        # 'pool-name', FIXME check out why this is not writable
         'pool-fair',
         'pool-prefill',
         'pool-use-strict-min',
@@ -101,6 +102,20 @@ class DatasourcesModule(BaseJBossModule):
         'xa-datasource-class'
     ]
 
+    JDBC_DRIVER_NON_UPDATEABLE_PARAMS = [
+        'deployment-name',
+        # 'driver-class-name',
+        # 'driver-datasource-class-name',
+        # 'driver-xa-datasource-class-name',
+        'driver-major-version',
+        'driver-minor-version',
+        # 'driver-module-name',
+        # 'driver-name',
+        # 'module-slot',
+        # 'profile',
+        # 'xa-datasource-class'
+    ]
+
     def __init__(self, context=None):
         super(DatasourcesModule, self).__init__(path='/subsystem=datasources', context=context)
 
@@ -114,12 +129,15 @@ class DatasourcesModule(BaseJBossModule):
         changes = []
 
         for key in datasources.keys():
+
             if key == 'data-source':
-                datasources = self._format_apply_param(datasources['data-source'])
-                changes += self.apply_datasources(datasources)
+                ds = self._format_apply_param(datasources[key])
+                changes += self.apply_datasources(ds)
             elif key == 'jdbc-driver':
-                drivers = self._format_apply_param(datasources['jdbc-driver'])
+                drivers = self._format_apply_param(datasources[key])
                 changes += self.apply_jdbc_drivers(drivers)
+            else:
+                debug('%s.apply(): Unrecognised property %s => %r' % (self.__class__.__name__, key, datasources[key]))
 
         if len(changes) > 0:
             changes = {
@@ -219,7 +237,7 @@ class DatasourcesModule(BaseJBossModule):
             jdbc_driver_dmr = self.read_resource_dmr(jdbc_driver_path)
             # update jdbc_driver
             fc = dict(
-                (k, v) for (k, v) in iteritems(jdbc_driver) if k in self.JDBC_DRIVER_PARAMS)
+                (k, v) for (k, v) in iteritems(jdbc_driver) if k in self.JDBC_DRIVER_PARAMS and k not in self.JDBC_DRIVER_NON_UPDATEABLE_PARAMS)
             a_changes = self._sync_attributes(parent_node=jdbc_driver_dmr,
                                               parent_path=jdbc_driver_path,
                                               target_state=fc,

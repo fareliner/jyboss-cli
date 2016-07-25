@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division, print_function)
 
 from jyboss.exceptions import ParameterError, NotFoundError
 from jyboss.command.core import BaseJBossModule
+from jyboss.logging import debug
 
 __metaclass__ = type
 
@@ -305,6 +306,9 @@ class UndertowListenerModule(BaseJBossModule):
 
     def apply_listener_present(self, server_name, listener):
 
+        debug('%s:add(): %r' % (self.__class__.__name__, listener))
+        debug('  >> alowwed_params: %r' % self.listener_params)
+
         name = self._get_param(listener, 'name')
 
         resource_path = self.path % (server_name, self.listener_type, name)
@@ -325,7 +329,6 @@ class UndertowListenerModule(BaseJBossModule):
 
         except NotFoundError:
             listener_add_params = self.convert_to_dmr_params(listener, self.listener_params)
-
             self.cmd('%s:add(%s)' % (resource_path, listener_add_params))
             changes.append({self.listener_type: name, 'action': 'added',
                             'params': listener_add_params})

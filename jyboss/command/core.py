@@ -159,7 +159,8 @@ class CommandHandler(ConfigurationChangeHandler):
             return self.context.connection.jcli
 
     def cmd(self, cmd, silent=False):
-        result = self._cli().cmd('%s' % cmd)
+        debug('%s.cmd(): %s' % (self.__class__.__name__, cmd))
+        result = self._cli().cmd(cmd)
         if result.isSuccess():
             return self._return_success(result, silent=silent)
         else:
@@ -328,7 +329,7 @@ class BaseJBossModule(CommandHandler):
     @staticmethod
     def _cast_node_undefined(n, v):
         if n is None or not n.isDefined or (n.type == n.type.UNDEFINED) or (
-                hasattr(n, 'type') and n.isDefined() and n.type == n.type.OBJECT):
+                        hasattr(n, 'type') and n.isDefined() and n.type == n.type.OBJECT):
             v_a = None
         else:
             raise ParameterError('Node has a undefined type but contains some value: %r' % n)
