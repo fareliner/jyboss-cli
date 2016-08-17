@@ -338,6 +338,8 @@ class AnsibleModule(object):
                 if no_log_object:
                     self.no_log_values.update(return_values(no_log_object))
 
+        self.pretty_print = self.params.get('pretty', False)
+
     def fail_on_missing_params(self, required_params=None):
         """ This is for checking for required params when we can not check via argspec because we
         need more information than is simply given in the argspec.
@@ -377,7 +379,10 @@ class AnsibleModule(object):
     def jsonify(self, data):
         for encoding in ("utf-8", "latin-1"):
             try:
-                return json.dumps(data, encoding=encoding)
+                pretty = dict()
+                if self.pretty_print:
+                    pretty['indent'] = 4
+                return json.dumps(data, encoding=encoding, **pretty)
             # Old systems using old simplejson module does not support encoding keyword.
             except TypeError:
                 try:
