@@ -14,6 +14,7 @@ from jyboss.command.undertow import UndertowCustomFilterModule
 from jyboss.command.undertow import UndertowSocketBindingModule
 from jyboss.command.undertow import UndertowHttpListenerModule
 from jyboss.command.undertow import UndertowAjpListenerModule
+from jyboss.command.undertow import UndertowSocketBindingModule
 
 from jyboss.command.extension import ExtensionModule
 from jyboss.command.ee import EEModule

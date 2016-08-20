@@ -70,6 +70,7 @@ def main():
         # register all modules needed for processing, extensions not registered will simply be ignored
         change_processor.register(ExtensionModule(jyboss))
         change_processor.register(UndertowModule(jyboss))
+        change_processor.register(UndertowSocketBindingModule(jyboss))
         change_processor.register(SecurityModule(jyboss))
         change_processor.register(KeycloakModule(jyboss))
         change_processor.register(EEModule(jyboss))
