@@ -2,6 +2,7 @@
 from __future__ import (absolute_import, division, print_function)
 
 import inspect
+import re
 from abc import ABCMeta, abstractmethod
 
 from jyboss.exceptions import *
@@ -45,6 +46,7 @@ class UndefinedType(object):
 
 undefined = type(UndefinedType())
 
+_expression_matcher = re.compile('^(?:expression\s*)?(\$\{.*})$')
 
 def unescape_keys(d):
     """
@@ -131,6 +133,7 @@ def convert_to_dmr_params(args, allowable_attributes=None):
 
 def convert_type(obj):
     if isinstance(obj, basestring) and str(obj).startswith('expression'):
+        # FIXME handle expression syntax
         return obj
     else:
         return json.dumps(obj)
@@ -291,7 +294,7 @@ class ChangeObservable(object):
                 if changes is not None:
                     result['changed'] = True
                     result.setdefault('changes', {}).setdefault(key, []).append(changes)
-                # FIXME facter needs to return mapped key and no change result[key_replacement_name] = changes
+                    # FIXME facter needs to return mapped key and no change result[key_replacement_name] = changes
 
         return result
 
@@ -390,25 +393,59 @@ class BaseJBossModule(CommandHandler):
     @staticmethod
     def _cast_node_int(n, v):
         v_a = None if n is None else n.asInt()
-        v_t = None if v is None else int(v)
+
+        if v is None:
+            v_t = None
+        else:
+            try:
+                v_t = _expression_matcher.match(v).group(1)
+            except AttributeError:
+                v_t = int(v)
+
         return v_a, v_t
 
     @staticmethod
     def _cast_node_long(n, v):
         v_a = None if n is None else n.asLong()
-        v_t = None if v is None else long(v)
+
+        if v is None:
+            v_t = None
+        else:
+            try:
+                v_t = _expression_matcher.match(v).group(1)
+            except AttributeError:
+                v_t = long(v)
+
         return v_a, v_t
 
     @staticmethod
     def _cast_node_string(n, v):
         v_a = None if n is None else n.asString()
-        v_t = None if v is None else str(v)
+
+        if v is None:
+            v_t = None
+        else:
+            try:
+                v_t = _expression_matcher.match(v).group(1)
+            except AttributeError:
+                v_t = str(v)
+
         return v_a, v_t
 
     @staticmethod
     def _cast_node_boolean(n, v):
         v_a = None if n is None else n.asBoolean()
-        v_t = None if v is None else bool(v)
+
+        if v is None:
+            v_t = None
+        elif type(v) is bool:
+            v_t = v
+        else:
+            try:
+                v_t = _expression_matcher.match(v).group(1)
+            except AttributeError:
+                v_t = bool(v)
+
         return v_a, v_t
 
     @staticmethod
@@ -418,14 +455,18 @@ class BaseJBossModule(CommandHandler):
         else:
             exp = n.asExpression()
             exp_val = exp.getExpressionString()
-            v_a = str('expression %s' % exp_val)
+            v_a = str(exp_val)
 
-        # check if v start with lower(expression)
         if v is None:
             v_t = None
-        else:
-            # TODO should we validate expression syntax?
+        elif type(v) is not basestring:
             v_t = str(v)
+        else:
+            try:
+                v_t = re.search('^(?:expression\s*)?(\$\{.*})$', v).group(1)
+            except AttributeError:
+                # TODO should probably use reflection on the node to work out what value the node can accept
+                v_t = str(v)
 
         return v_a, v_t
 
