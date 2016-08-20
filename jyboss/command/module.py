@@ -76,8 +76,8 @@ class ModuleModule(BaseJBossModule):
             except CommandError as ce:
                 debug('module command error %r' % ce)
                 self.debug_errm(ce)
-                cause = ce['cause'] if 'cause' in ce else None
-                msg = cause['message'] if cause is not None and 'message' in cause else ''
+                cause = getattr(ce, 'cause') if hasattr(ce, 'cause') else None
+                msg = getattr(cause, 'message') if cause is not None and hasattr(cause, 'message') else ''
                 if msg.find('already exists') != -1 or msg.find('Failed to locate module') != -1:
                     # ignore as nothing to do
                     debug('Ignoring module deploy error: %s' % msg)
