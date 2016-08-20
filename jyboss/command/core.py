@@ -272,6 +272,47 @@ class CommandHandler(ConfigurationChangeHandler):
                 raise OperationError(errm)
 
 
+class ChangeObservable(object):
+    """
+    Observable class that will be used to process the command line and delegate processing to the actual handler
+    """
+
+    def __init__(self):
+        self._observers = {}
+
+    def process_instructions(self, instructions):
+        result = dict(changed=False)
+
+        for key in instructions:
+            # notify all observers that can handle this command instruction
+            for observer in self._observers.setdefault(key, []):
+                debug('jyboss.ansible: process %s' % key)
+                changes = observer.apply(**instructions)
+                if changes is not None:
+                    result['changed'] = True
+                    result.setdefault('changes', {}).setdefault(key, []).append(changes)
+                # FIXME facter needs to return mapped key and no change result[key_replacement_name] = changes
+
+        return result
+
+    def register(self, observer):
+
+        if observer is None:
+            raise ParameterError('observer cannot be null')
+
+        elif not hasattr(observer, 'apply'):
+            raise NotImplementedError(
+                '%s does not have an apply method' % observer.__class__.__name__)
+
+        spec = inspect.getargspec(observer.apply)
+        # by definition the first argument in the apply function is the configuration name that can be handled
+        if len(spec.args) > 1 and spec.args[0] == 'self':
+            key = spec.args[1]
+            self._observers.setdefault(key, []).append(observer)
+        else:
+            raise ParameterError('%s.apply is not implemented correctly' % observer.__class__.__name__)
+
+
 class BatchHandler(CommandHandler):
     def start(self):
         self._cli().batch_start()
@@ -299,6 +340,18 @@ class BatchHandler(CommandHandler):
         return self._cli().batch_is_active()
 
 
+class ReloadCommandHandler(CommandHandler):
+    def __init__(self, context=None):
+        super(ReloadCommandHandler, self).__init__(context=context)
+
+    def apply(self, reload=False):
+        if bool(reload):
+            self.cmd('/:reload()')
+            return ['reloaded']
+        else:
+            return None
+
+
 # TODO review this class
 class AttributeUpdateHandler(object):
     __metaclass__ = ABCMeta
@@ -309,8 +362,6 @@ class AttributeUpdateHandler(object):
 
 
 class BaseJBossModule(CommandHandler):
-    __metaclass__ = ABCMeta
-
     STATE_ABSENT = 'absent'
     STATE_PRESENT = 'present'
 

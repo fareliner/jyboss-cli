@@ -26,6 +26,34 @@ else:
         return d.iteritems()
 
 
+class UndertowModule(BaseJBossModule):
+    def __init__(self, context=None):
+        super(UndertowModule, self).__init__(path='/subsystem=undertow', context=context)
+        self.CONFIG_SUBMODULE = {
+            'custom_filter': UndertowCustomFilterModule(self.context),
+            'socket_binding': UndertowSocketBindingModule(self.context),
+            'http_listener': UndertowHttpListenerModule(self.context),
+            'ajp_listener': UndertowAjpListenerModule(self.context)
+        }
+
+    def apply(self, undertow=None, **kwargs):
+
+        changes = []
+
+        for key in undertow:
+            if key in self.CONFIG_SUBMODULE:
+                handler = self.CONFIG_SUBMODULE[key]
+                subchanges = handler.apply(undertow[key], **kwargs)
+                if subchanges is not None:
+                    changes.append({
+                        key: subchanges
+                    })
+            else:
+                raise ParameterError('%s cannot handle configuration %s' % (self.__class__.__name__, key))
+
+        return None if len(changes) < 1 else changes
+
+
 class UndertowCustomFilterModule(BaseJBossModule):
     DEFAULT_PRIORITY = 1
 
@@ -41,7 +69,7 @@ class UndertowCustomFilterModule(BaseJBossModule):
         if 'name' not in filter_conf:
             raise ParameterError('provided filter name is null')
 
-    def apply(self, server_name=None, host_name=None, custom_filter=None, **kwargs):
+    def apply(self, custom_filter=None, server_name=None, host_name=None, **kwargs):
 
         custom_filter = self._format_apply_param(custom_filter)
 
