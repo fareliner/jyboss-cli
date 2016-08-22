@@ -6,7 +6,6 @@ from jyboss.command.core import escape_keys, unescape_keys, expression_deseriali
 from jyboss.command.core import ReloadCommandHandler
 from jyboss.command.core import ChangeObservable
 from jyboss.command.core import CommandHandler as _BasicCommandHandler
-from jyboss.command.core import BatchHandler as _BatchHandler
 
 # management specific handlers
 from jyboss.command.undertow import UndertowModule
@@ -23,6 +22,7 @@ from jyboss.command.module import ModuleModule
 from jyboss.command.security import SecurityModule
 from jyboss.command.keycloak import KeycloakModule
 from jyboss.command.deployment import DeploymentModule
+from jyboss.command.jgroups import JGroupsModule
 
 __metaclass__ = type
 
@@ -43,4 +43,4 @@ cd = _base.cd
 ls = _base.ls
 cmd = _base.cmd
 
-batch = _BatchHandler()
+batch = _base

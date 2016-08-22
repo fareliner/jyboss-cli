@@ -78,6 +78,7 @@ def main():
         change_processor.register(DatasourcesModule(jyboss))
         change_processor.register(DeploymentModule(jyboss))
         change_processor.register(ReloadCommandHandler(jyboss))
+        change_processor.register(JGroupsModule(jyboss))
         # endregion
 
         with conn:
@@ -103,8 +104,8 @@ def main():
             changeset = change_processor.process_instructions(ansible.params)
             if changeset.pop('changed', False):
                 result['changed'] = True
-            for key in changeset:
-                result[key] = changeset[key]
+                for key in changeset:
+                    result[key] = changeset[key]
 
         ansible.exit_json(**result)
     except Exception as err:

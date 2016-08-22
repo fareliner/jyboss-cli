@@ -46,7 +46,9 @@ class UndefinedType(object):
 
 undefined = type(UndefinedType())
 
-_expression_matcher = re.compile('^(?:expression\s*)?(\$\{.*})$')
+_expression_matcher = re.compile('^(?:[\'\"]?expression?\s*[\"\']?)(\$\{.*\})[\'\"]*$')
+_not_found_matcher = re.compile('WFLYCTL0030|WFLYCTL0216')
+
 
 def unescape_keys(d):
     """
@@ -132,9 +134,12 @@ def convert_to_dmr_params(args, allowable_attributes=None):
 
 
 def convert_type(obj):
-    if isinstance(obj, basestring) and str(obj).startswith('expression'):
-        # FIXME handle expression syntax
-        return obj
+    if isinstance(obj, basestring):
+        m = _expression_matcher.match(obj)
+        if m:
+            return m.group(1)
+        else:
+            return "\"%s\"" % obj # FIXME this needs to be reviewed as it is normally not required to wrap strings in cli
     else:
         return json.dumps(obj)
 
@@ -161,6 +166,18 @@ class CommandHandler(ConfigurationChangeHandler):
         else:
             return self.context.connection.jcli
 
+    def start(self):
+        """
+        Start a batch command session
+        """
+        self._cli().batch_start()
+
+    def reset(self):
+        """
+        Reset batch command session
+        """
+        self._cli().batch_reset()
+
     def cmd(self, cmd, silent=False):
         debug('%s.cmd(): %s' % (self.__class__.__name__, cmd))
         result = self._cli().cmd(cmd)
@@ -170,7 +187,7 @@ class CommandHandler(ConfigurationChangeHandler):
             errm = self._extract_errm(result)
             if errm is None:
                 raise OperationError('Unknown error occurred executing: %s' % cmd)
-            elif errm.find('WFLYCTL0216') != -1:
+            elif _not_found_matcher.match(errm) is not None:
                 raise NotFoundError(errm)
             else:
                 raise OperationError(errm)
@@ -187,7 +204,7 @@ class CommandHandler(ConfigurationChangeHandler):
             errm = self._extract_errm(result)
             if errm is None:
                 raise OperationError('Unknown error occurred executing: %s' % cmd)
-            elif errm.find('WFLYCTL0216') != -1:
+            elif _not_found_matcher.match(errm) is not None:
                 raise NotFoundError(errm)
             else:
                 raise OperationError(errm)
@@ -268,11 +285,42 @@ class CommandHandler(ConfigurationChangeHandler):
             return self._return_success(result, _ls_response_magic, silent=silent)
         else:
             errm = self._extract_errm(result)
-            if errm.find('WFLYCTL0062') != -1 and errm.find('WFLYCTL0216') != -1:
+            if errm.find('WFLYCTL0062') != -1 and _not_found_matcher.match(errm) is not None:
                 # TODO snip errm?
                 raise NotFoundError(errm)
             else:
                 raise OperationError(errm)
+
+    def run(self, silent=False):
+        """
+        Run the batch command
+        :param silent: if True disable output to stdout
+        """
+        result = self._cli().cmd('run-batch')
+        if result.isSuccess():
+            return self._return_success(result, silent=silent)
+        else:
+            errm = self._extract_errm(result)
+            if errm.find('WFLYCTL0062') != -1 and _not_found_matcher.match(errm) is not None:
+                raise NotFoundError(errm)
+            elif errm.find('WFLYCTL0062') != -1 and errm.find('WFLYCTL0212') != -1:
+                raise DuplicateResourceError(errm)
+            else:
+                raise OperationError(errm)
+
+    def add_cmd(self, batch_cmd):
+        """
+        Add command to batch command list for execution
+        :param batch_cmd: {str|list(str)} - the command to add to the list of batch commands
+        """
+        if not isinstance(batch_cmd, list):
+            batch_cmd = [batch_cmd]
+
+        for cmd in batch_cmd:
+            self._cli().batch_add_cmd(cmd)
+
+    def is_active(self):
+        return self._cli().batch_is_active()
 
 
 class ChangeObservable(object):
@@ -314,33 +362,6 @@ class ChangeObservable(object):
             self._observers.setdefault(key, []).append(observer)
         else:
             raise ParameterError('%s.apply is not implemented correctly' % observer.__class__.__name__)
-
-
-class BatchHandler(CommandHandler):
-    def start(self):
-        self._cli().batch_start()
-
-    def reset(self):
-        self._cli().batch_reset()
-
-    def run(self, silent=False):
-        result = self._cli().cmd('run-batch')
-        if result.isSuccess():
-            return self._return_success(result, silent=silent)
-        else:
-            errm = self._extract_errm(result)
-            if errm.find('WFLYCTL0062') != -1 and errm.find('WFLYCTL0216') != -1:
-                raise NotFoundError(errm)
-            elif errm.find('WFLYCTL0062') != -1 and errm.find('WFLYCTL0212') != -1:
-                raise DuplicateResourceError(errm)
-            else:
-                raise OperationError(errm)
-
-    def add_cmd(self, batch_cmd):
-        self._cli().batch_add_cmd(batch_cmd)
-
-    def is_active(self):
-        return self._cli().batch_is_active()
 
 
 class ReloadCommandHandler(CommandHandler):
@@ -459,7 +480,7 @@ class BaseJBossModule(CommandHandler):
 
         if v is None:
             v_t = None
-        elif type(v) is not basestring:
+        elif not isinstance(v, basestring):
             v_t = str(v)
         else:
             try:

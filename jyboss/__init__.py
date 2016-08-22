@@ -3,7 +3,7 @@ from __future__ import (absolute_import, division, print_function)
 
 from jyboss.context import JyBossContext, MODE_EMBEDDED, MODE_STANDALONE
 from jyboss.context import ConnectionResource as _ConnectionResource
-from jyboss.command import ls, cmd, cd
+from jyboss.command import ls, cmd, cd, batch
 
 #
 # from jyboss.command import *

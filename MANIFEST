@@ -15,3 +15,4 @@ jyboss\command\ee.py
 jyboss\command\datasources.py
 jyboss\command\module.py
 jyboss\command\deployment.py
+jyboss\command\jgroups.py
