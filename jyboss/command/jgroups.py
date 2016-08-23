@@ -236,7 +236,9 @@ class JGroupsStackModule(BaseJBossModule):
                 # sync properties params
                 # match all new to all old properties
                 old_properties = old_proto.get('properties', {})
-                for p_k, p_vn in iteritems(new_proto.get('properties', {})):
+                for property in new_proto.get('properties', []):
+                    p_k = property.get('name', None)
+                    p_vn = property.get('value', None)
                     # first check is for a deliberate remove of a prop by setting new value to None
                     if p_vn is None:
                         if p_k in old_properties:
@@ -290,11 +292,14 @@ class JGroupsStackModule(BaseJBossModule):
                 protocol_type = self._get_param(new_proto, 'type')
                 proto_params = self.convert_to_dmr_params(new_proto, self.PROTOCOL_PARAMS + ['type'])
                 self.cmd('{0}/protocol={1}:add({2})'.format(self.path % stack_name, protocol_type, proto_params))
-                properties = new_proto.get('properties', {})
-                for p_k in properties.keys():
+                properties = new_proto.get('properties', [])
+                for property in properties:
+                    p_k = property.get('name')
+                    p_v = property.get('value')
                     self.cmd('{0}/protocol={1}/property={2}/:add(value={3})' \
-                             .format(self.path % stack_name, protocol_type, p_k, properties[p_k]))
-                changes.append({'protocol': protocol_type, 'action': 'added'})
+                             .format(self.path % stack_name, protocol_type, p_k, p_v))
+                changes.append({'protocol': protocol_type, 'action': 'added', 'parameters': proto_params,
+                                'properties': properties})
 
         return changes
 
