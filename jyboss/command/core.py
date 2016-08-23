@@ -46,7 +46,7 @@ class UndefinedType(object):
 
 undefined = type(UndefinedType())
 
-_expression_matcher = re.compile('^(?:[\'\"]?expression?\s*[\"\']?)(\$\{.*\})[\'\"]*$')
+_expression_matcher = re.compile('^[\'\"]?(?:expression\s*[\'\"]?)?(\$\{.*\})[\'\"]*$')
 _not_found_matcher = re.compile('WFLYCTL0030|WFLYCTL0216')
 
 
@@ -137,9 +137,9 @@ def convert_type(obj):
     if isinstance(obj, basestring):
         m = _expression_matcher.match(obj)
         if m:
-            return m.group(1)
+            return "\"%s\"" % m.group(1)
         else:
-            return "\"%s\"" % obj # FIXME this needs to be reviewed as it is normally not required to wrap strings in cli
+            return "\"%s\"" % obj  # FIXME this needs to be reviewed as it is normally not required to wrap strings in cli
     else:
         return json.dumps(obj)
 
@@ -334,7 +334,8 @@ class ChangeObservable(object):
     def process_instructions(self, instructions):
         result = dict(changed=False)
 
-        for key in instructions:
+        for key in instructions.keys():
+            debug('ChangeObservable.process(%s)' % key)
             # notify all observers that can handle this command instruction
             for observer in self._observers.setdefault(key, []):
                 debug('jyboss.ansible: process %s' % key)
@@ -368,7 +369,8 @@ class ReloadCommandHandler(CommandHandler):
     def __init__(self, context=None):
         super(ReloadCommandHandler, self).__init__(context=context)
 
-    def apply(self, reload=False):
+    def apply(self, reload=False, **kwargs):
+        debug('%s:apply() %r' % (self.__class__.__name__, reload))
         if bool(reload):
             self.cmd('/:reload()')
             return ['reloaded']
