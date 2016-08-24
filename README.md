@@ -13,10 +13,10 @@ Download the packaged [JyBoss module](https://github.com/fareliner/jyboss-cli/re
 Example `pip` Installation:
 
 ```sh
-curl -L -o jyboss-0.1.0.tar.gz \
-     https://github.com/fareliner/jyboss-cli/releases/download/v0.1.0/jyboss-0.1.0.tar.gz
+curl -L -o jyboss-0.1.1.tar.gz \
+     https://github.com/fareliner/jyboss-cli/releases/download/v0.1.1/jyboss-0.1.1.tar.gz
 
-pip install -U jyboss-0.1.0.tar.gz
+pip install -U jyboss-0.1.1.tar.gz
 ```
 
 ### Limitations

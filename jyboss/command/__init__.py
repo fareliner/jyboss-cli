@@ -23,6 +23,7 @@ from jyboss.command.security import SecurityModule
 from jyboss.command.keycloak import KeycloakModule
 from jyboss.command.deployment import DeploymentModule
 from jyboss.command.jgroups import JGroupsModule
+from jyboss.command.interface import InterfaceModule
 
 __metaclass__ = type
 

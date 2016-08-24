@@ -1,0 +1,5 @@
+---
+interface:
+  - name: nictest
+    state: present
+    nic: eth0

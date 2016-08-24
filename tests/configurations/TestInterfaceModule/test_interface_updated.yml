@@ -1,0 +1,5 @@
+---
+interface:
+  - name: public
+    state: present
+    inet_address: '${jboss:param:127.0.0.1}'

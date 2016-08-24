@@ -1,0 +1,6 @@
+---
+interface:
+  - name: public
+    state: present
+    inet_address: ~
+    nic: eth0
