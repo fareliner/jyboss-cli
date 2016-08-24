@@ -213,7 +213,10 @@ class UndertowCustomFilterModule(BaseJBossModule):
 
 
 class UndertowSocketBindingModule(BaseJBossModule):
-    BINDING_PARAMS = {'port'}
+    BINDING_PARAMS = [
+        'port',
+        'interface'
+    ]
 
     def __init__(self, context=None):
         super(UndertowSocketBindingModule, self).__init__(path='/socket-binding-group=%s/socket-binding=%s',
