@@ -1,0 +1,15 @@
+---
+jgroups:
+  state: present
+  stack:
+  - name: tcp
+    state: present
+    transport:
+      type: TCP
+      state: present
+      socket_binding: jgroups-tcp
+    protocol:
+      - type: TCPPING
+        properties:
+          - name: timeout
+            value: ~

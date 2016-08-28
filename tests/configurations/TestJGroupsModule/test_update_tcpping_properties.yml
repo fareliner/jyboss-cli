@@ -1,0 +1,35 @@
+---
+jgroups:
+  state: present
+  stack:
+  - name: tcp
+    state: present
+    transport:
+      type: TCP
+      state: present
+      socket_binding: jgroups-tcp
+    protocol:
+      - type: TCPPING
+        properties:
+          - name: initial_hosts
+            value: 'testhost[7900]'
+          - name: port_range
+            value: '0'
+          - name: timeout
+            value: 2000
+          - name: initial_cluster_members
+            value: 2
+      - type: MERGE3
+      - type: FD_SOCK
+        socket_binding: jgroups-tcp-fd
+      - type: FD
+      - type: VERIFY_SUSPECT
+      - type: pbcast.NAKACK2
+      - type: UNICAST3
+      - type: pbcast.STABLE
+      - type: pbcast.GMS
+      - type: UFC
+      - type: MFC
+      - type: FRAG2
+      - type: pbcast.STATE_TRANSFER
+      - type: pbcast.FLUSH

@@ -293,11 +293,12 @@ class JGroupsStackModule(BaseJBossModule):
                 proto_params = self.convert_to_dmr_params(new_proto, self.PROTOCOL_PARAMS + ['type'])
                 self.cmd('{0}/protocol={1}:add({2})'.format(self.path % stack_name, protocol_type, proto_params))
                 properties = new_proto.get('properties', [])
-                for property in properties:
-                    p_k = property.get('name')
-                    p_v = property.get('value')
-                    self.cmd('{0}/protocol={1}/property={2}/:add(value={3})' \
-                             .format(self.path % stack_name, protocol_type, p_k, p_v))
+                for new_prop in properties:
+                    p_k = new_prop.get('name')
+                    p_v = new_prop.get('value')
+                    if p_v is not None:
+                        self.cmd('{0}/protocol={1}/property={2}/:add(value={3})' \
+                                 .format(self.path % stack_name, protocol_type, p_k, p_v))
                 changes.append({'protocol': protocol_type, 'action': 'added', 'parameters': proto_params,
                                 'properties': properties})
 
@@ -305,7 +306,7 @@ class JGroupsStackModule(BaseJBossModule):
 
     def _check_protocol_order(self, stack_name, protocols):
         old_stack = self.read_resource_dmr(self.path % stack_name)
-        if old_stack.has('protocol'):
+        if old_stack.has('protocol') and str(old_stack.get('protocol').type) != 'UNDEFINED':
             old_protos = [str(p) for p in old_stack.get('protocol').keys()]
         else:
             old_protos = []
