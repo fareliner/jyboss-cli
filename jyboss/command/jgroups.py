@@ -243,7 +243,7 @@ class JGroupsStackModule(BaseJBossModule):
                     if p_vn is None:
                         if p_k in old_properties:
                             # remove it
-                            self.cmd('{0}/protocol={1}/property={2}/:remove())' \
+                            self.cmd('{0}/protocol={1}/property={2}/:remove()' \
                                      .format(self.path % stack_name, protocol_type, p_k))
                             changes.append({
                                 'protocol': protocol_type,
