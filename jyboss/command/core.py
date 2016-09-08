@@ -625,13 +625,15 @@ class BaseJBossModule(CommandHandler):
 
     def _format_apply_param(self, arg):
         """
-        Apply parameters can be either dicts of list of dicts, this method will simply torn it into a list.
+        Apply parameters can be either dicts of list of dicts, this method will simply turn it into a list.
         :param arg: the apply param to format
         :return: a list of apply parameters
         """
-        if type(arg) is dict:
+        if arg is None:
+            result = None
+        elif isinstance(arg, dict):
             result = [arg]
-        elif type(arg) is list:
+        elif isinstance(arg, list):
             result = arg
         else:
             raise ParameterError('%s provided to %s is not an allowable type' % (type(arg), self.__class__.__name__))
