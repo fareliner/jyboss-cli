@@ -44,7 +44,7 @@ class EEModule(BaseJBossModule):
         Example:
 
         """
-        if type(ee) is not dict:
+        if not isinstance(ee, dict):
             raise ParameterError('%s provided to %s is not an allowable type' % (ee, self.__class__.__name__))
 
         changes = []

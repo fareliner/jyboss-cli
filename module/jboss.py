@@ -35,11 +35,7 @@ def main():
                 jboss_home=dict(required=True),
                 config_file=dict(required=False, type='str'),
                 embedded_mode=dict(default=False, type='bool'),
-                domain_mode=dict(default=False, type='bool'),
-                server_name=dict(default='default-server', type='str'),
-                host_name=dict(default='default-host', type='str'),
-                reload=dict(default=False, type='bool'),
-                collect_facts=dict(default=False, type='bool')
+                domain_mode=dict(default=False, type='bool')
             ),
         )
 

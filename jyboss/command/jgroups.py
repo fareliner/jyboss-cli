@@ -43,7 +43,7 @@ class JGroupsModule(BaseJBossModule):
 
         jgroups = self.unescape_keys(jgroups)
 
-        if type(jgroups) is not dict:
+        if not isinstance(jgroups, dict):
             raise ParameterError('%s provided to %s is not an allowable type' % (jgroups, self.__class__.__name__))
 
         changes = []

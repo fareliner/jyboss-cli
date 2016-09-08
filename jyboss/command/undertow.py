@@ -29,6 +29,12 @@ else:
 class UndertowModule(BaseJBossModule):
     def __init__(self, context=None):
         super(UndertowModule, self).__init__(path='/subsystem=undertow', context=context)
+
+        self.UNDERTOW_PARAMS = {
+            "server_name",
+            "host_name"
+        }
+
         self.CONFIG_SUBMODULE = {
             'filter_ref': UndertowFilterRefModule(self.context),
             'web_filter': UndertowFilterModule(self.context),
@@ -40,14 +46,20 @@ class UndertowModule(BaseJBossModule):
 
         changes = []
 
-        for key in undertow:
+        undertow_config = dict((k, v) for (k, v) in undertow.items() if k not in self.CONFIG_SUBMODULE)
+
+        undertow_config.update(kwargs)
+
+        for key in undertow.keys():
             if key in self.CONFIG_SUBMODULE:
                 handler = self.CONFIG_SUBMODULE[key]
-                subchanges = handler.apply(undertow[key], **kwargs)
+                subchanges = handler.apply(undertow[key], **undertow_config)
                 if subchanges is not None:
                     changes.append({
                         key: subchanges
                     })
+            elif key in self.UNDERTOW_PARAMS:
+                pass
             else:
                 raise ParameterError('%s cannot handle configuration %s' % (self.__class__.__name__, key))
 

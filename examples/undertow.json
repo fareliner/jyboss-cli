@@ -3,10 +3,10 @@
   "domain_mode": false,
   "embedded_mode": true,
   "jboss_home": "C:\\opt\\jboss\\wildfly-10.0.0.Final",
-  "server_name": "default-server",
-  "host_name": "default-host",
   "facts": false,
   "undertow": {
+    "server_name": "default-server",
+    "host_name": "default-host",
     "web_filter_deactivate": [
       {
         "name": "proxy-peer",

@@ -4,6 +4,7 @@ from __future__ import (absolute_import, division, print_function)
 import inspect
 import re
 from abc import ABCMeta, abstractmethod
+from copy import deepcopy
 
 from jyboss.exceptions import *
 from jyboss.logging import debug
@@ -332,14 +333,42 @@ class ChangeObservable(object):
         self._observers = {}
 
     def process_instructions(self, instructions):
+        actions = []
+
+        local_instructions = deepcopy(instructions)
+
+        for k in instructions.keys():
+            instruction = instructions[k]
+            if k == 'actions':
+                if instruction is None:
+                    pass
+                elif isinstance(instruction, list):
+                    for action in instruction:
+                        for ka, va in action.items():
+                            actions.append((ka, va))
+                else:
+                    raise ParameterError('actions must be a list of module instructions')
+
+                # need to remove the key as part of elimination
+                del local_instructions[k]
+
+            elif k in self._observers:
+                actions.append((k, instruction))
+                # need to remove the key as part of elimination
+                del local_instructions[k]
+
+        return self._execute_action(local_instructions, actions)
+
+    def _execute_action(self, configuration, actions):
         result = dict(changed=False)
 
-        for key in instructions.keys():
-            debug('ChangeObservable.process(%s)' % key)
+        for key, action in actions:
+            debug('jyboss ChangeObservable.process(%s)' % key)
+            local_instruction = deepcopy(configuration)
+            local_instruction[key] = action
             # notify all observers that can handle this command instruction
             for observer in self._observers.setdefault(key, []):
-                debug('jyboss.ansible: process %s' % key)
-                changes = observer.apply(**instructions)
+                changes = observer.apply(**local_instruction)
                 if changes is not None:
                     result['changed'] = True
                     result.setdefault('changes', {}).setdefault(key, []).append(changes)

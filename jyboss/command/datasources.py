@@ -123,7 +123,7 @@ class DatasourcesModule(BaseJBossModule):
 
         datasources = self.unescape_keys(datasources)
 
-        if type(datasources) is not dict:
+        if not isinstance(datasources, dict):
             raise ParameterError('%s provided to %s is not an allowable type' % (datasources, self.__class__.__name__))
 
         changes = []

@@ -5,6 +5,7 @@ import sys
 import os
 import types
 import re
+from collections import OrderedDict
 
 import datetime
 
@@ -168,7 +169,7 @@ def json_dict_unicode_to_bytes(d, encoding='utf-8'):
     if isinstance(d, unicode):
         return d.encode(encoding)
     elif isinstance(d, dict):
-        return dict(imap(json_dict_unicode_to_bytes, iteritems(d), repeat(encoding)))
+        return OrderedDict(imap(json_dict_unicode_to_bytes, iteritems(d), repeat(encoding)))
     elif isinstance(d, list):
         return list(imap(json_dict_unicode_to_bytes, d, repeat(encoding)))
     elif isinstance(d, tuple):
@@ -286,7 +287,7 @@ def _load_params():
         _ANSIBLE_ARGS = buff
 
     try:
-        params = json.loads(buff.decode('utf-8'))
+        params = json.loads(buff.decode('utf-8'), object_pairs_hook=OrderedDict)
     except ValueError:
         # This helper used too early for fail_json to work.
         print(
