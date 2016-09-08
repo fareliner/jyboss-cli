@@ -17,3 +17,4 @@ jyboss\command\module.py
 jyboss\command\deployment.py
 jyboss\command\jgroups.py
 jyboss\command\interface.py
+jyboss\command\binding.py

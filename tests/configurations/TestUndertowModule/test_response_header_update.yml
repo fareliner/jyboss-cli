@@ -1,0 +1,9 @@
+---
+server_name: default-server
+host_name: default-host
+web_filter:
+  - name: server-header
+    type: response-header
+    state: present
+    header_name: Server
+    header_value: 'Fancy Value'

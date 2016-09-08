@@ -1,0 +1,10 @@
+---
+server_name: default-server
+host_name: default-host
+web_filter:
+  - name: request-dumper
+    type: custom-filter
+    state: present
+    class_name: "io.undertow.server.handlers.RequestDumpingHandler"
+    module: "io.undertow.core"
+    priority: 30

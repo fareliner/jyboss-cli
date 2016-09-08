@@ -7,7 +7,7 @@
   "host_name": "default-host",
   "facts": false,
   "undertow": {
-    "custom_filter_deactivate": [
+    "web_filter_deactivate": [
       {
         "name": "proxy-peer",
         "state": "present",

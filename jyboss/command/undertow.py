@@ -30,8 +30,8 @@ class UndertowModule(BaseJBossModule):
     def __init__(self, context=None):
         super(UndertowModule, self).__init__(path='/subsystem=undertow', context=context)
         self.CONFIG_SUBMODULE = {
-            'custom_filter': UndertowCustomFilterModule(self.context),
-            'socket_binding': UndertowSocketBindingModule(self.context),
+            'filter_ref': UndertowFilterRefModule(self.context),
+            'web_filter': UndertowFilterModule(self.context),
             'http_listener': UndertowHttpListenerModule(self.context),
             'ajp_listener': UndertowAjpListenerModule(self.context)
         }
@@ -54,106 +54,64 @@ class UndertowModule(BaseJBossModule):
         return None if len(changes) < 1 else changes
 
 
-class UndertowCustomFilterModule(BaseJBossModule):
+class UndertowFilterRefModule(BaseJBossModule):
     DEFAULT_PRIORITY = 1
-
-    FILTER_PARAMS = {'module', 'class-name'}
 
     FILTER_REF_PARAMS = {'priority'}
 
     def __init__(self, context=None):
-        super(UndertowCustomFilterModule, self).__init__(path='/subsystem=undertow/configuration=filter',
-                                                         context=context)
+        super(UndertowFilterRefModule, self).__init__(path='/subsystem=undertow/server=%s/host=%s/filter-ref=%s',
+                                                      context=context)
 
-    def __call__(self, filter_conf):
-        if 'name' not in filter_conf:
-            raise ParameterError('provided filter name is null')
+    def apply(self, filter_ref=None, server_name=None, host_name=None, **kwargs):
 
-    def apply(self, custom_filter=None, server_name=None, host_name=None, **kwargs):
-
-        custom_filter = self._format_apply_param(custom_filter)
+        filter_refs = self._format_apply_param(filter_ref)
 
         if server_name is None:
             if 'server_name' in kwargs:
                 server_name = kwargs['server_name']
             else:
-                raise ParameterError('The undertow custom-filter module requires a server_name argument')
+                raise ParameterError('The undertow filter-ref module requires a server_name argument')
 
         if host_name is None:
             if 'host_name' in kwargs:
                 host_name = kwargs['host_name']
             else:
-                raise ParameterError('The undertow custom-filter module requires a host_name argument')
+                raise ParameterError('The undertow filter-ref module requires a host_name argument')
 
         changes = []
 
-        for filter_config in custom_filter:
+        for fref in filter_refs:
 
-            state = self._get_param(filter_config, 'state')
+            state = self._get_param(fref, 'state')
 
             if state not in ['present', 'absent']:
                 raise ParameterError('filter state is not one of [present|absent]')
 
-            name = self._get_param(filter_config, 'name')
+            name = self._get_param(fref, 'name')
 
             if state == 'present':
-                changes += self.apply_filter_present(name, filter_config)
-                changes += self.apply_filter_ref_present(server_name, host_name, name, filter_config)
+                changes += self.apply_filter_ref_present(server_name, host_name, name, fref)
 
             elif state == 'absent':
                 changes += self.apply_filter_ref_absent(server_name, host_name, name)
-                changes += self.apply_filter_absent(name)
 
         return None if len(changes) < 1 else changes
 
-    def apply_filter_absent(self, name):
-        changes = []
-        # FIXME if 'WFLYCTL0216' not in failure:
-        #     raise ProcessingError('failed to delete filter %s: %s' % (name, failure))
-        try:
-            self.cmd('%s/custom-filter=%s:remove()' % (self.path, name))
-            changes.append({'filter': name, 'action': 'deleted'})
-        except NotFoundError:
-            pass
-
-        return changes
-
     def apply_filter_ref_absent(self, server_name, host_name, name):
+
         changes = []
         try:
-            self.cmd('/subsystem=undertow/server=%s/host=%s/filter-ref=%s:remove()' % (
-                server_name, host_name, name))
+            self.cmd(self.path % (server_name, host_name, name) + ':remove()')
             changes.append({'filter_ref': name, 'action': 'deleted'})
         except NotFoundError:
             pass
 
         return changes
 
-    def apply_filter_present(self, name, filter_config):
-        changes = []
-        try:
-            dmr_filter = self.read_resource_dmr('%s/custom-filter=%s' % (self.path, name))
-            # reduce filter config to only allowable values
-            fc = dict(
-                (key, value) for (key, value) in filter_config.items() if key in self.FILTER_PARAMS)
-            a_changes = self._sync_attributes(parent_node=dmr_filter,
-                                              parent_path='%s/custom-filter=%s' % (self.path, name),
-                                              target_state=fc,
-                                              allowable_attributes=self.FILTER_PARAMS)
-            if len(a_changes) > 0:
-                changes.append({'filter': name, 'action': 'updated', 'changes': a_changes})
-        except NotFoundError:
-            # filter does not exist and we need to create it
-            module = self._get_param(filter_config, 'module')
-            class_name = self._get_param(filter_config, 'class-name')
-            self.cmd('%s/custom-filter=%s:add(class-name=%s, module=%s)' % (self.path, name, class_name, module))
-            changes.append({'filter': name, 'action': 'added'})
-
-        return changes
-
     def apply_filter_ref_present(self, server_name, host_name, name, filter_config):
         changes = []
-        filter_ref_path = '/subsystem=undertow/server=%s/host=%s/filter-ref=%s' % (server_name, host_name, name)
+        filter_ref_path = self.path % (server_name, host_name, name)
         try:
             dmr_filter_ref = self.read_resource_dmr(filter_ref_path)
             # reduce filter config to only allowable values
@@ -212,84 +170,103 @@ class UndertowCustomFilterModule(BaseJBossModule):
         return change
 
 
-class UndertowSocketBindingModule(BaseJBossModule):
-    BINDING_PARAMS = [
-        'port',
-        'interface'
-    ]
+class UndertowFilterModule(BaseJBossModule):
+    """
+    Module that can modify filters.
+
+    web_filter:
+        name: filter-name
+        type: type of filter e.g. [custom-filter|response-header]
+        state: [present|absent]
+        prop_x: property by name from each of the filter type definitions
+
+    """
+
+    FILTER_PARAMS = {
+        'custom-filter': [
+            'module',
+            'class-name'
+        ],
+        'response-header': [
+            'header-name',
+            'header-value'
+        ]
+    }
 
     def __init__(self, context=None):
-        super(UndertowSocketBindingModule, self).__init__(path='/socket-binding-group=%s/socket-binding=%s',
-                                                          context=context)
+        super(UndertowFilterModule, self).__init__(path='/subsystem=undertow/configuration=filter',
+                                                   context=context)
+        self.filter_ref_module = UndertowFilterRefModule(context)
 
-    def __call__(self, binding_conf):
+    def apply(self, web_filter=None, **kwargs):
 
-        binding_conf = self.unescape_keys(binding_conf)
+        if web_filter is None:
+            raise ParameterError('filter must not be null')
 
-        if 'name' not in binding_conf:
-            raise ParameterError('provided socket binding name is null')
-
-        if 'socket-binding-group-name' not in binding_conf:
-            raise ParameterError('provided socket binding group name is null')
-
-    def apply(self, socket_binding=None, **kwargs):
-
-        socket_bindings = self._format_apply_param(socket_binding)
+        filters = self._format_apply_param(web_filter)
 
         changes = []
 
-        for binding in socket_bindings:
+        for filter_config in filters:
 
-            state = self._get_param(binding, 'state')
+            state = self._get_param(filter_config, 'state')
 
             if state not in ['present', 'absent']:
-                raise ParameterError('socket binding state is not one of [present|absent]')
+                raise ParameterError('filter state is not one of [present|absent]')
 
             if state == 'present':
-                changes += self.apply_socket_binding_present(binding)
+                changes += self.apply_filter_present(filter_config)
+                # the filter configuration carries enough information for us to also create the filter-ref element
+                ref_change = self.filter_ref_module.apply(filter_config, **kwargs)
+                if ref_change is not None:
+                    changes += ref_change
             elif state == 'absent':
-                changes += self.apply_socket_binding_absent(binding)
+                # the filter configuration carries enough information for us to also remove the filter-ref element
+                ref_change = self.filter_ref_module.apply(filter_config, **kwargs)
+                if ref_change is not None:
+                    changes += ref_change
+                changes += self.apply_filter_absent(filter_config)
 
         return None if len(changes) < 1 else changes
 
-    def apply_socket_binding_present(self, binding):
-        group_name = self._get_param(binding, 'socket-binding-group-name')
-        name = self._get_param(binding, 'name')
-
-        resource_path = self.path % (group_name, name)
-
+    def apply_filter_absent(self, filter_config):
+        filter_name = self._get_param(filter_config, 'name')
+        filter_type = self._get_param(filter_config, 'type')
         changes = []
-
+        # FIXME if 'WFLYCTL0216' not in failure:
+        #     raise ProcessingError('failed to delete filter %s: %s' % (name, failure))
         try:
-            binding_dmr = self.read_resource_dmr(resource_path, True)
-            fc = dict(
-                (k, v) for (k, v) in iteritems(binding) if k in self.BINDING_PARAMS)
-            a_changes = self._sync_attributes(parent_node=binding_dmr,
-                                              parent_path=resource_path,
-                                              target_state=fc,
-                                              allowable_attributes=self.BINDING_PARAMS)
-            if len(a_changes) > 0:
-                changes.append({'socket-binding': name, 'socket-binding-group': group_name, 'action': 'updated',
-                                'changes': a_changes})
-
+            self.cmd('%s/%s=%s:remove()' % (self.path, filter_type, filter_name))
+            changes.append({'filter': filter_name, 'type': filter_type, 'action': 'deleted'})
         except NotFoundError:
-            binding_params = self.convert_to_dmr_params(binding, self.BINDING_PARAMS)
-
-            self.cmd('%s:add(%s)' % (resource_path, binding_params))
-            changes.append({'socket-binding': name, 'socket-binding-group': group_name, 'action': 'added',
-                            'params': binding_params})
+            pass
 
         return changes
 
-    def apply_socket_binding_absent(self, binding):
-        group_name = self._get_param(binding, 'socket-binding-group-name')
-        name = self._get_param(binding, 'name')
-        resource_path = self.path % (group_name, name)
+    def apply_filter_present(self, filter_config):
+        filter_name = self._get_param(filter_config, 'name')
+        filter_type = self._get_param(filter_config, 'type')
+        changes = []
         try:
-            self.cmd('%s:remove' % resource_path)
-            return [{'socket-binding': name, 'socket-binding-group': group_name, 'action': 'deleted'}]
+            dmr_filter = self.read_resource_dmr('%s/%s=%s' % (self.path, filter_type, filter_name))
+            # reduce filter config to only allowable values
+            fc = dict(
+                (key, value) for (key, value) in filter_config.items() if
+                key in self.FILTER_PARAMS.get(filter_type, []))
+            a_changes = self._sync_attributes(parent_node=dmr_filter,
+                                              parent_path='%s/%s=%s' % (self.path, filter_type, filter_name),
+                                              target_state=fc,
+                                              allowable_attributes=self.FILTER_PARAMS.get(filter_type, []))
+
+            if len(a_changes) > 0:
+                changes.append({'filter': filter_name, 'type': filter_type, 'action': 'updated', 'changes': a_changes})
+
         except NotFoundError:
-            return []
+            filter_params = self.convert_to_dmr_params(filter_config, self.FILTER_PARAMS.get(filter_type, []))
+            self.cmd('%s/%s=%s:add(%s)' % (self.path, filter_type, filter_name, filter_params))
+            changes.append({'filter': filter_name, 'type': filter_type, 'action': 'added', 'params': filter_params})
+
+        return changes
 
 
 class UndertowListenerModule(BaseJBossModule):
