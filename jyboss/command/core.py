@@ -125,7 +125,7 @@ def convert_to_dmr_params(args, allowable_attributes=None):
     """
     Converts a dictionary of parameters into a "string" list that can be used in a add method call on the jboss cli)
     :param args: {dict} - the argument key/value pair that needs to be turned into a param list
-    :param allowable_attributes:
+    :param allowable_attributes: {list[string]} - a list of attribute names that will be included in the args string
     :return: a string list of args formatted for the cli
     """
     result = ', '.join(
@@ -443,7 +443,7 @@ class BaseJBossModule(CommandHandler):
 
     @staticmethod
     def _cast_node_string(n, v):
-        v_a = None if n is None else n.asString()
+        v_a = None if n is None else str(n.asString())
 
         if v is None:
             v_t = None
@@ -506,7 +506,7 @@ class BaseJBossModule(CommandHandler):
                 'old_value': old_value
             }
         elif new_value is not None and new_value != old_value:
-            self.cmd('%s:write-attribute(name=%s, value=%s)' % (parent_path, name, new_value))
+            self.cmd('%s:write-attribute(name=%s, value=%s)' % (parent_path, name, convert_type(new_value)))
 
             change = {
                 'attribute': name,
