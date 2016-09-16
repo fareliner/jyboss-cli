@@ -407,6 +407,26 @@ class ReloadCommandHandler(CommandHandler):
             return None
 
 
+class CliCmdHandler(CommandHandler):
+    """
+    A basic handler that will simply execute the cli string given and return. IF an error occurs it will fail
+    throw an error and execution halts.
+
+    Example:
+        cmd: ''
+    """
+
+    def __init__(self, context=None):
+        super(CliCmdHandler, self).__init__(context=context)
+
+    def apply(self, cmd=None, **kwargs):
+        debug('%s:apply() %r' % (self.__class__.__name__, reload))
+        if cmd is not None:
+            self.cmd(cmd)
+
+        return None
+
+
 # TODO review this class
 class AttributeUpdateHandler(object):
     __metaclass__ = ABCMeta

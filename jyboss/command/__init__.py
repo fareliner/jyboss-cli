@@ -3,7 +3,7 @@ from __future__ import (absolute_import, division, print_function)
 
 # care command handlers
 from .core import escape_keys, unescape_keys, expression_deserializer
-from .core import ReloadCommandHandler
+from .core import ReloadCommandHandler, CliCmdHandler
 from .core import ChangeObservable
 from .core import CommandHandler as _BasicCommandHandler
 

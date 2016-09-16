@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='jyboss',
-    version='0.2.0',
+    version='0.2.1',
     url='https://github.com/fareliner/jyboss-cli',
     author='Niels Bertram',
     author_email='nielsbne@gmail.com',
