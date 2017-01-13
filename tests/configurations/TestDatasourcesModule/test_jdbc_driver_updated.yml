@@ -3,4 +3,6 @@ datasources:
   jdbc_driver:
     - name: h2e
       state: present
-      driver_module_name: com.h2database.h2
+      driver_module_name: com.h2database.h222
+      driver_class_name: org.h2.Driver
+      xa_datasource_class: org.h2.jdbcx.JdbcDataSourceXATEST

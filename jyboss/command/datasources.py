@@ -104,16 +104,16 @@ class DatasourcesModule(BaseJBossModule):
 
     JDBC_DRIVER_NON_UPDATEABLE_PARAMS = [
         'deployment-name',
-        # 'driver-class-name',
-        # 'driver-datasource-class-name',
-        # 'driver-xa-datasource-class-name',
+        'driver-class-name',
+        'driver-datasource-class-name',
+        'driver-xa-datasource-class-name',
         'driver-major-version',
         'driver-minor-version',
-        # 'driver-module-name',
-        # 'driver-name',
-        # 'module-slot',
-        # 'profile',
-        # 'xa-datasource-class'
+        'driver-module-name',
+        'driver-name',
+        'module-slot',
+        'profile',
+        'xa-datasource-class'
     ]
 
     def __init__(self, context=None):
@@ -236,6 +236,10 @@ class DatasourcesModule(BaseJBossModule):
         try:
             jdbc_driver_dmr = self.read_resource_dmr(jdbc_driver_path)
             # update jdbc_driver
+            for (k, v) in iteritems(jdbc_driver):
+                if k in self.JDBC_DRIVER_NON_UPDATEABLE_PARAMS:
+                    debug('Warning, parameter %s cannot be updated on jdbc driver and will be ignored' % k)
+
             fc = dict(
                 (k, v) for (k, v) in iteritems(jdbc_driver) if k in self.JDBC_DRIVER_PARAMS and k not in self.JDBC_DRIVER_NON_UPDATEABLE_PARAMS)
             a_changes = self._sync_attributes(parent_node=jdbc_driver_dmr,
