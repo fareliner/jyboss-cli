@@ -61,14 +61,7 @@ class InterfaceModule(BaseJBossModule):
             else:
                 raise ParameterError('The interface state is not one of [present|absent]')
 
-        if len(changes) > 0:
-            changes = {
-                'interfaces': changes
-            }
-        else:
-            changes = None
-
-        return changes
+        return changes if len(changes) > 0 else None
 
     def apply_present(self, interface):
         name = self._get_param(interface, 'name')

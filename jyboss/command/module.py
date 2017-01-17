@@ -88,14 +88,7 @@ class ModuleModule(BaseJBossModule):
                 self.debug_errm(coe)
                 raise coe
 
-        if len(changes) > 0:
-            changes = {
-                'module': changes
-            }
-        else:
-            changes = None
-
-        return changes
+        return changes if len(changes) > 0 else None
 
     def debug_errm(self, err, level=0):
         msg = err.message if 'message' in err and err['message'] is not None else ''

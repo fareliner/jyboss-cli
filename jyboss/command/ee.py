@@ -55,14 +55,7 @@ class EEModule(BaseJBossModule):
                 changes += self.apply_ee_service(services)
                 # handle service
 
-        if len(changes) > 0:
-            changes = {
-                'ee': changes
-            }
-        else:
-            changes = None
-
-        return changes
+        return changes if len(changes) > 0 else None
 
     def apply_ee_service(self, services):
 

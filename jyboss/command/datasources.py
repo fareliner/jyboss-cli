@@ -139,14 +139,7 @@ class DatasourcesModule(BaseJBossModule):
             else:
                 debug('%s.apply(): Unrecognised property %s => %r' % (self.__class__.__name__, key, datasources[key]))
 
-        if len(changes) > 0:
-            changes = {
-                'datasources': changes
-            }
-        else:
-            changes = None
-
-        return changes
+        return changes if len(changes) > 0 else None
 
     def apply_datasources(self, datasources):
 

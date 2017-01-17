@@ -371,7 +371,13 @@ class ChangeObservable(object):
                 changes = observer.apply(**local_instruction)
                 if changes is not None:
                     result['changed'] = True
-                    result.setdefault('changes', {}).setdefault(key, []).append(changes)
+                    # I want result['action'] = key and changes appended to result['changes']
+                    result.setdefault('changes', [])
+                    result['changes'].append({
+                        'module': key,
+                        'executor': observer.__class__.__name__,
+                        'changes': changes
+                    })
                     # FIXME facter needs to return mapped key and no change result[key_replacement_name] = changes
 
         return result

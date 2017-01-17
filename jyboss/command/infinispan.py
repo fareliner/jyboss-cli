@@ -365,13 +365,13 @@ class Cache(BaseJBossModule):
             cache_dmr = self.read_resource_dmr(cache_path, recursive=True)
             fc = dict(
                 (k, v) for (k, v) in iteritems(cache) if k in self.cache_params)
-            a_changes = self._sync_attributes(parent_node=cache_dmr,
-                                              parent_path=cache_path,
-                                              target_state=fc,
-                                              allowable_attributes=self.cache_params)
-            if len(a_changes) > 0:
+            attr_changes = self._sync_attributes(parent_node=cache_dmr,
+                                                 parent_path=cache_path,
+                                                 target_state=fc,
+                                                 allowable_attributes=self.cache_params)
+            if len(attr_changes) > 0:
                 change['action'] = 'updated'
-                change['changes'] += a_changes
+                change['changes'] += attr_changes
 
         except NotFoundError:
             cache_params = self.convert_to_dmr_params(cache, self.cache_params)
@@ -461,7 +461,7 @@ class Component(BaseJBossModule):
         super(Component, self).__init__(path='/subsystem=infinispan/cache-container=%s/%s=%s/component=%s',
                                         context=context)
         self.component_type = component_type
-        self.cache_params = component_params
+        self.component_params = component_params
 
     def apply(self, container_name, cache_type, cache_name, config=None, **kwargs):
         if config is None:
@@ -485,19 +485,19 @@ class Component(BaseJBossModule):
         }
 
         try:
-            transport_dmr = self.read_resource_dmr(config_path, recursive=True)
+            config_dmr = self.read_resource_dmr(config_path, recursive=True)
             fc = dict(
-                (k, v) for (k, v) in iteritems(config) if k in self.cache_params)
-            a_changes = self._sync_attributes(parent_node=transport_dmr,
-                                              parent_path=config_path,
-                                              target_state=fc,
-                                              allowable_attributes=self.cache_params)
-            if len(a_changes) > 0:
+                (k, v) for (k, v) in iteritems(config) if k in self.component_params)
+            attr_changes = self._sync_attributes(parent_node=config_dmr,
+                                                 parent_path=config_path,
+                                                 target_state=fc,
+                                                 allowable_attributes=self.component_params)
+            if len(attr_changes) > 0:
                 change['action'] = 'updated'
-                change['changes'] += a_changes
+                change['changes'] += attr_changes
 
         except NotFoundError:
-            config_params = self.convert_to_dmr_params(config, self.cache_params)
+            config_params = self.convert_to_dmr_params(config, self.component_params)
             self.cmd('%s:add(%s)' % (config_path, config_params))
             change['action'] = 'added'
             if len(config_params) > 0:

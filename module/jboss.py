@@ -21,7 +21,7 @@ from jyboss.command import *
 from jyboss.logging import debug
 from jyboss.ansible import AnsibleModule
 from jyboss.command import escape_keys
-from jyboss.exceptions import NotFoundError
+from jyboss.exceptions import NotFoundError, ParameterError
 
 
 def main():
@@ -104,7 +104,19 @@ def main():
             if changeset.pop('changed', False):
                 result['changed'] = True
                 for key in changeset:
-                    result[key] = changeset[key]
+                    if key in result and isinstance(result[key], list) and isinstance(changeset[key], list):
+                        # merge lists of the same key
+                        result[key] += changeset[key]
+                    elif key in result and isinstance(result[key], list):
+                        # add to result list if the change set is not a list
+                        result[key].append(changeset[key])
+                    elif key in result and result[key] is not None:
+                        raise ParameterError(
+                            'result key [%s] is already present and would otherwise be overridden: %r' %
+                            (key, result[key]))
+                    else:
+                        # we just transfer the value
+                        result[key] = changeset[key]
 
         ansible.exit_json(**result)
     except Exception as err:

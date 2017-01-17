@@ -49,11 +49,4 @@ class DeploymentModule(BaseJBossModule):
             except NotFoundError:
                 pass
 
-        if len(changes) > 0:
-            changes = {
-                'deployments': changes
-            }
-        else:
-            changes = None
-
-        return changes
+        return changes if len(changes) > 0 else None
