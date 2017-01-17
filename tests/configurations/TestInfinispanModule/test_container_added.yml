@@ -1,0 +1,46 @@
+---
+infinispan:
+  state: present
+  cache_container:
+    - name: FancyCache
+      state: present
+      default_cache: local-query
+    - name: web
+      state: present
+      transport:
+        state: present
+        lock-timeout: 20000
+    - name: NotSoFancy
+      state: present
+      module: 'org.hibernate.infinispan'
+      aliases: ['NotSoFancy01', 'NotSoFancy02']
+      statistics_enabled: true
+      transport:
+        state: present
+        channel: default
+        stack: TCP
+        cluster: none
+        lock-timeout: 20000
+      caches:
+        - name: passivation
+          type: local-cache
+          state: present
+          locking:
+            isolation: REPEATABLE_READ
+          transaction:
+            mode: BATCH
+        - name: realms
+          type: invalidation-cache
+          state: present
+          mode: SYNC
+        - name: sessions
+          type: distributed-cache
+          state: present
+          mode: SYNC
+          owners: 1
+          l1_lifespan: 0
+          partition_handling:
+            enabled: yes
+          state_transfer:
+            timeout: 3000
+            chunk_size: 300

@@ -76,6 +76,7 @@ def main():
         change_processor.register(CliCmdHandler(jyboss))
         change_processor.register(ReloadCommandHandler(jyboss))
         change_processor.register(JGroupsModule(jyboss))
+        change_processor.register(InfinispanModule(jyboss))
         change_processor.register(InterfaceModule(jyboss))
         # endregion
 

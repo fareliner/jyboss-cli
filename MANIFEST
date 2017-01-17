@@ -16,5 +16,6 @@ jyboss\command\datasources.py
 jyboss\command\module.py
 jyboss\command\deployment.py
 jyboss\command\jgroups.py
+jyboss\command\infinispan.py
 jyboss\command\interface.py
 jyboss\command\binding.py

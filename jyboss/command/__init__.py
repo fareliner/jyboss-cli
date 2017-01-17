@@ -22,6 +22,7 @@ from .security import SecurityModule
 from .keycloak import KeycloakModule
 from .deployment import DeploymentModule
 from .jgroups import JGroupsModule
+from .infinispan import InfinispanModule
 from .interface import InterfaceModule
 from .binding import SocketBindingModule
 
