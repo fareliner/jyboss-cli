@@ -468,6 +468,8 @@ class BaseJBossModule(CommandHandler):
 
         if v is None:
             v_t = None
+        elif isinstance(v, int):
+            v_t = int(v)
         else:
             try:
                 v_t = _expression_matcher.match(v).group(1)
@@ -482,6 +484,8 @@ class BaseJBossModule(CommandHandler):
 
         if v is None:
             v_t = None
+        elif isinstance(v, (int, long)):
+            v_t = long(v)
         else:
             try:
                 v_t = _expression_matcher.match(v).group(1)
