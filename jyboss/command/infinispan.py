@@ -52,38 +52,30 @@ class InfinispanModule(BaseJBossModule):
         elif state == 'absent':
             changes += self.apply_absent()
 
-        return None if len(changes) < 1 else changes
+        return changes if len(changes) > 0 else None
 
     def apply_present(self, infinispan):
+        changes = []
 
-        was_created = False
         try:
-            self.read_resource(self.path, recursive=True)
-            # TODO do we have ever subsystem level params?
+            self.read_resource(self.path, recursive=False)
         except NotFoundError:
             self.cmd('%s:add()' % self.path)
-            was_created = True
+            changes.append({'subsystem': 'infinispan', 'action': 'added'})
 
-        changes = []
         for key in infinispan:
             # first check if a submodule handler exists for the key element
             if key in self.submodules:
                 handler = self.submodules[key]
                 handler_changes = handler.apply(infinispan[key])
                 if len(handler_changes) > 0:
-                    changes.append({
-                        key: handler_changes
-                    })
+                    changes += handler_changes
             elif key in ['state']:
-                # REVIEW not sure we ever have to "sync" subsystem level attributes
                 pass
             else:
                 raise ParameterError('%s cannot handle configuration %s' % (self.__class__.__name__, key))
 
-        if len(changes) > 0:
-            return [{'subsystem': 'infinispan', 'action': 'added' if was_created else 'updated', 'changes': changes}]
-        else:
-            return []
+        return changes
 
     def apply_absent(self):
         changes = []
@@ -139,7 +131,7 @@ class CacheContainerModule(BaseJBossModule):
         name = self._get_param(stack, 'name')
         try:
             self.cmd((self.path + ':remove()') % name)
-            return [{'container': name, 'action': 'deleted'}]
+            return [{'cache-container': name, 'action': 'deleted'}]
         except NotFoundError:
             return []
 
@@ -148,7 +140,7 @@ class CacheContainerModule(BaseJBossModule):
         container_path = self.path % container_name
 
         change = {
-            'container': container_name,
+            'cache-container': container_name,
             'action': None,
             'changes': []
         }
@@ -161,8 +153,8 @@ class CacheContainerModule(BaseJBossModule):
                                                    parent_path=container_path,
                                                    target_state=fc,
                                                    allowable_attributes=self.CONTAINER_PARAMS)
-            change['action'] = 'updated'
             if len(update_changes) > 0:
+                change['action'] = 'updated'
                 change['changes'] += update_changes
 
         except NotFoundError:

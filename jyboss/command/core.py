@@ -563,7 +563,7 @@ class BaseJBossModule(CommandHandler):
 
             change = {
                 'attribute': name,
-                'action': 'update',
+                'action': 'updated',
                 'old_value': old_value,
                 'new_value': new_value
             }
