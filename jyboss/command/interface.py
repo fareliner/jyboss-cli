@@ -77,11 +77,11 @@ class InterfaceModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.INTERFACE_PARAMS)
             if len(a_changes) > 0:
-                changes.append({'interface': name, 'action': 'updated', 'changes': a_changes})
+                changes.append({'interface': name, 'action': 'update', 'changes': a_changes})
         except NotFoundError:
             iface_params = self.convert_to_dmr_params(interface, self.INTERFACE_PARAMS)
             self.cmd('%s:add(%s)' % (iface_path, iface_params))
-            changes.append({'interface': name, 'action': 'added'})
+            changes.append({'interface': name, 'action': 'add'})
         return changes
 
     def apply_absent(self, interface):
@@ -92,7 +92,7 @@ class InterfaceModule(BaseJBossModule):
         try:
             self.read_resource_dmr(iface_path)
             self.cmd('%s:remove()' % iface_path)
-            changes.append({'interface': name, 'action': 'deleted'})
+            changes.append({'interface': name, 'action': 'delete'})
         except NotFoundError:
             pass
 

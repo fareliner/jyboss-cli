@@ -1,4 +1,4 @@
-from tests import *
+from . import *
 
 from jyboss.command import SocketBindingModule
 
@@ -18,7 +18,7 @@ class TestSocketBindingModule(JBossTest):
             self.assertEqual(1, len(changes))
             self.assertTrue('socket-binding' in changes[0])
             self.assertTrue('action' in changes[0])
-            self.assertEqual('added', changes[0]['action'])
+            self.assertEqual('add', changes[0]['action'])
             # TODO validate that the xml configuration written reflects these changes
 
     @jboss_context(mode=MODE_EMBEDDED, interactive=False)
@@ -32,7 +32,7 @@ class TestSocketBindingModule(JBossTest):
             self.assertEqual(1, len(changes))
             self.assertTrue('socket-binding' in changes[0])
             self.assertTrue('action' in changes[0])
-            self.assertEqual('added', changes[0]['action'])
+            self.assertEqual('add', changes[0]['action'])
             # TODO validate that the xml configuration written reflects these changes
 
     @jboss_context(mode=MODE_EMBEDDED, interactive=False)
@@ -46,7 +46,7 @@ class TestSocketBindingModule(JBossTest):
             self.assertEqual(1, len(changes))
             self.assertTrue('socket-binding' in changes[0])
             self.assertTrue('action' in changes[0])
-            self.assertEqual('updated', changes[0]['action'])
+            self.assertEqual('update', changes[0]['action'])
             # TODO validate that the xml configuration written reflects these changes
 
     @jboss_context(mode=MODE_EMBEDDED, interactive=False)
@@ -60,7 +60,7 @@ class TestSocketBindingModule(JBossTest):
             self.assertEqual(1, len(changes))
             self.assertTrue('socket-binding' in changes[0])
             self.assertTrue('action' in changes[0])
-            self.assertEqual('updated', changes[0]['action'])
+            self.assertEqual('update', changes[0]['action'])
             # TODO validate that the xml configuration written reflects these changes
 
     @jboss_context(mode=MODE_EMBEDDED, interactive=False)
@@ -83,5 +83,5 @@ class TestSocketBindingModule(JBossTest):
             self.assertEqual(1, len(changes))
             self.assertTrue('socket-binding' in changes[0])
             self.assertTrue('action' in changes[0])
-            self.assertEqual('deleted', changes[0]['action'])
+            self.assertEqual('delete', changes[0]['action'])
             # TODO validate that the xml configuration written reflects these changes

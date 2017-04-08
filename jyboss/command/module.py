@@ -72,7 +72,7 @@ class ModuleModule(BaseJBossModule):
                 debug('module: execute command %s' % cmd)
                 self.cmd(cmd)
                 changes.append(
-                    {'module': self._get_param(mod, 'name'), 'action': 'added' if state == 'present' else 'deleted'})
+                    {'module': self._get_param(mod, 'name'), 'action': 'add' if state == 'present' else 'delete'})
             except CommandError as ce:
                 debug('module command error %r' % ce)
                 self.debug_errm(ce)

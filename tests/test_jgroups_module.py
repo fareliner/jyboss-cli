@@ -1,4 +1,4 @@
-from tests import *
+from . import *
 
 from jyboss.command import JGroupsModule
 

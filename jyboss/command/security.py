@@ -79,11 +79,11 @@ class SecurityModule(BaseJBossModule):
                 modules = authentication.get('login-modules', [])
                 self.cmd('%s/authentication=%s:add(login-modules=%s)' % (
                     resource_path, auth_type, self.converts_to_dmr(modules)))
-            return [{'security-domain': name, 'action': 'added'}]
+            return [{'security-domain': name, 'action': 'add'}]
 
     def apply_security_domain_absent(self, name):
         try:
             self.cmd('%s/security-domain=%s:remove' % (self.path, name))
-            return [{'security-domain': name, 'action': 'deleted'}]
+            return [{'security-domain': name, 'action': 'delete'}]
         except NotFoundError:
             return []

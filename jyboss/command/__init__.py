@@ -19,7 +19,7 @@ from .ee import EEModule
 from .datasources import DatasourcesModule
 from .module import ModuleModule
 from .security import SecurityModule
-from .keycloak import KeycloakModule
+from .keycloak import KeycloakAdapterModule
 from .deployment import DeploymentModule
 from .jgroups import JGroupsModule
 from .infinispan import InfinispanModule

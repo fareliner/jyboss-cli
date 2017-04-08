@@ -57,7 +57,7 @@ class ExtensionModule(BaseJBossModule):
     def apply_extension_absent(self, name):
         try:
             self.cmd('%s=%s:remove()' % (self.path, name))
-            return [{'extension': name, 'action': 'deleted'}]
+            return [{'extension': name, 'action': 'delete'}]
         except NotFoundError:
             return []
 
@@ -70,4 +70,4 @@ class ExtensionModule(BaseJBossModule):
                 return []
         except NotFoundError:
             self.cmd('%s=%s:add(module=%s)' % (self.path, name, module))
-            return [{'extension': name, 'action': 'added'}]
+            return [{'extension': name, 'action': 'add'}]

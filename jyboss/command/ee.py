@@ -71,7 +71,7 @@ class EEModule(BaseJBossModule):
                                                   target_state=fc,
                                                   allowable_attributes=self.EE_SERVICE_PARAMS)
                 if len(a_changes) > 0:
-                    changes.append({'service': name, 'action': 'updated', 'changes': a_changes})
+                    changes.append({'service': name, 'action': 'update', 'changes': a_changes})
 
             except NotFoundError as e:
                 raise ParameterError('Failed to update EE default bindings: %s' % e.message)

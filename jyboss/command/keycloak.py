@@ -20,7 +20,7 @@ else:
         return d.iteritems()
 
 
-class KeycloakModule(BaseJBossModule):
+class KeycloakAdapterModule(BaseJBossModule):
     __metaclass__ = ABCMeta
 
     # TODO add all others from the sources
@@ -83,16 +83,16 @@ class KeycloakModule(BaseJBossModule):
     }
 
     def __init__(self, context=None):
-        super(KeycloakModule, self).__init__(path='/subsystem=keycloak', context=context)
+        super(KeycloakAdapterModule, self).__init__(path='/subsystem=keycloak', context=context)
 
-    def apply(self, keycloak=None, **kwargs):
+    def apply(self, keycloak_adapter=None, **kwargs):
         """
-        Apply a keycloak subsystem configuration:
+        Apply a keycloak adapter subsystem configuration:
 
         Example:
-            keycloak:
+            keycloak_adapter:
               realm:
-                - name: apiman
+                - name: myrealm
                   state: present
                   realm_public_key: "MIIBIjANBgkq...A"
                   auth_server_url: 'https://login.server.com/auth'
@@ -100,9 +100,9 @@ class KeycloakModule(BaseJBossModule):
                   enable_cors: false
                   principal_attribute: preferred_username
               secure_deployment:
-                - name: apiman.war
+                - name: myapp.war
                   state: present
-                  resource: apiman
+                  resource: myrealm
                   credential:
                     type: secret
                     value: "5af5458f-0a96-4251-8f92-08ebcc3a8aa2"
@@ -110,12 +110,12 @@ class KeycloakModule(BaseJBossModule):
                   bearer_only: true
                   enable_basic_auth: true
 
-        :param keycloak: the keycloak subsystem configuration to configure
+        :param keycloak_adapter: the keycloak subsystem configuration to configure
         :param kwargs: any other args that may be useful
         :return: changed flag and a list of changes that have been applied to the security domain
         """
 
-        keycloak = self.unescape_keys(keycloak)
+        keycloak = self.unescape_keys(keycloak_adapter)
         changes = []
 
         if keycloak is None or 'realm' not in keycloak or keycloak['realm'] is None:
@@ -150,13 +150,13 @@ class KeycloakModule(BaseJBossModule):
         except NotFoundError:
             # create realm
             self.cmd('%s:add' % self.path)
-            return [{'subsystem': 'keycloak', 'action': 'added'}]
+            return [{'subsystem': 'keycloak', 'action': 'add'}]
 
     def apply_keycloak_subsystem_absent(self):
         changes = []
         try:
             self.cmd('%s:remove' % self.path)
-            changes.append({'subsystem': 'keycloak', 'action': 'deleted'})
+            changes.append({'subsystem': 'keycloak', 'action': 'delete'})
         except NotFoundError:
             pass
         return changes
@@ -206,14 +206,14 @@ class KeycloakModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.KC_REALM_PARAMS)
             if len(a_changes) > 0:
-                changes.append({'realm': name, 'action': 'updated', 'changes': a_changes})
+                changes.append({'realm': name, 'action': 'update', 'changes': a_changes})
 
         except NotFoundError:
             # create the domain and add auth modules if present
             realm_params = self.convert_to_dmr_params(realm, self.KC_REALM_PARAMS)
 
             self.cmd('%s:add(%s)' % (realm_path, realm_params))
-            changes.append({'realm': name, 'action': 'added', 'params': realm_params})
+            changes.append({'realm': name, 'action': 'add', 'params': realm_params})
 
         return changes
 
@@ -221,7 +221,7 @@ class KeycloakModule(BaseJBossModule):
         try:
             self.cmd('%s/realm=%s:remove' % (self.path, name))
             # TODO also remove secure deployments with it
-            return [{'keycloak-realm': name, 'action': 'deleted'}]
+            return [{'keycloak-realm': name, 'action': 'delete'}]
         except NotFoundError:
             return []
 
@@ -268,7 +268,7 @@ class KeycloakModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.KC_REALM_PARAMS)
             if len(a_changes) > 0:
-                changes.append({'secure-deployment': name, 'action': 'updated', 'changes': a_changes})
+                changes.append({'secure-deployment': name, 'action': 'update', 'changes': a_changes})
 
             if 'credential' in deployment:
                 changes += self._apply_credentials(name, deployment['credential'])
@@ -281,7 +281,7 @@ class KeycloakModule(BaseJBossModule):
             if 'credential' in deployment:
                 changes += self._apply_credentials(name, deployment['credential'])
 
-            changes.append({'secure-deployment': name, 'action': 'added', 'params': depl_params})
+            changes.append({'secure-deployment': name, 'action': 'add', 'params': depl_params})
 
         return changes
 
@@ -297,7 +297,7 @@ class KeycloakModule(BaseJBossModule):
         if cred_value is None:
             try:
                 self.cmd('%s:remove()' % cred_path)
-                changes.append({'deployment': deployment_name, 'credential': cred_type, 'action': 'deleted'})
+                changes.append({'deployment': deployment_name, 'credential': cred_type, 'action': 'delete'})
             except NotFoundError:
                 pass
         else:
@@ -306,17 +306,17 @@ class KeycloakModule(BaseJBossModule):
                 if 'value' in cred and cred['value'] != cred_value:
                     self.cmd(
                         '%s:write-attribute(name=value, value=%s)' % (cred_path, cred_value))
-                    changes.append({'deployment': deployment_name, 'credential': cred_type, 'action': 'updated'})
+                    changes.append({'deployment': deployment_name, 'credential': cred_type, 'action': 'update'})
 
             except NotFoundError:
                 self.cmd('%s:add(value=%s)' % (cred_path, cred_value))
-                changes.append({'deployment': deployment_name, 'credential': cred_type, 'action': 'updated'})
+                changes.append({'deployment': deployment_name, 'credential': cred_type, 'action': 'update'})
 
         return changes
 
     def apply_secure_deployment_absent(self, name):
         try:
             self.cmd('%s/secure-deployment=%s:remove' % (self.path, name))
-            return [{'secure-deployment': name, 'action': 'deleted'}]
+            return [{'secure-deployment': name, 'action': 'delete'}]
         except NotFoundError:
             return []

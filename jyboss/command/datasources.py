@@ -164,7 +164,7 @@ class DatasourcesModule(BaseJBossModule):
 
         try:
             self.cmd('%s/data-source=%s:remove()' % (self.path, name))
-            return [{'datasource': name, 'action': 'deleted'}]
+            return [{'datasource': name, 'action': 'delete'}]
         except NotFoundError:
             return []
 
@@ -183,13 +183,13 @@ class DatasourcesModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.DATASOURCE_PARAMS)
             if len(a_changes) > 0:
-                changes.append({'datasource': name, 'action': 'updated', 'changes': a_changes})
+                changes.append({'datasource': name, 'action': 'update', 'changes': a_changes})
 
         except NotFoundError:
             # create the datasource
             ds_params = self.convert_to_dmr_params(datasource, self.DATASOURCE_PARAMS)
             self.cmd('%s/data-source=%s:add(%s)' % (self.path, name, ds_params))
-            changes.append({'datasource': name, 'action': 'added', 'params': ds_params})
+            changes.append({'datasource': name, 'action': 'add', 'params': ds_params})
 
         return changes
 
@@ -217,7 +217,7 @@ class DatasourcesModule(BaseJBossModule):
 
         try:
             self.cmd('%s/jdbc-driver=%s:remove()' % (self.path, name))
-            return [{'jdbc-driver': name, 'action': 'deleted'}]
+            return [{'jdbc-driver': name, 'action': 'delete'}]
         except NotFoundError:
             return []
 
@@ -240,7 +240,7 @@ class DatasourcesModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.JDBC_DRIVER_PARAMS)
             if len(a_changes) > 0:
-                changes.append({'jdbc-driver': name, 'action': 'updated', 'changes': a_changes})
+                changes.append({'jdbc-driver': name, 'action': 'update', 'changes': a_changes})
 
         except NotFoundError:
             # little hack to maintain sanity, for some reason one has to supply the name of the driver in the list of
@@ -250,6 +250,6 @@ class DatasourcesModule(BaseJBossModule):
 
             jdbc_driver_params = self.convert_to_dmr_params(jdbc_driver, self.JDBC_DRIVER_PARAMS)
             self.cmd('%s/jdbc-driver=%s:add(%s)' % (self.path, name, jdbc_driver_params))
-            changes.append({'jdbc-driver': name, 'action': 'added', 'params': jdbc_driver_params})
+            changes.append({'jdbc-driver': name, 'action': 'add', 'params': jdbc_driver_params})
 
         return changes

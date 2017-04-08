@@ -1,4 +1,4 @@
-from tests import *
+from . import *
 
 from jyboss.command import ModuleModule
 
@@ -19,13 +19,12 @@ class TestModuleModule(JBossTest):
 
             changes = ModuleModule(self.context).apply(**args)
             self.context.interactive = True
-            print('module.combo(add): %r' % changes)
+            print('module.actions(add): %r' % changes)
             self.assertIsNotNone(changes)
-            self.assertTrue('module' in changes)
-            self.assertEqual(2, len(changes['module']))
+            self.assertEqual(2, len(changes))
 
-            add_change = changes['module'][0]
-            self.assertEqual('added', add_change.get('action', None))
+            add_change = changes[0]
+            self.assertEqual('add', add_change.get('action', None))
 
-            del_change = changes['module'][1]
-            self.assertEqual('deleted', del_change.get('action', None))
+            del_change = changes[1]
+            self.assertEqual('delete', del_change.get('action', None))

@@ -68,7 +68,7 @@ def main():
         change_processor.register(UndertowModule(jyboss))
         change_processor.register(SocketBindingModule(jyboss))
         change_processor.register(SecurityModule(jyboss))
-        change_processor.register(KeycloakModule(jyboss))
+        change_processor.register(KeycloakAdapterModule(jyboss))
         change_processor.register(EEModule(jyboss))
         change_processor.register(ModuleModule(jyboss))
         change_processor.register(DatasourcesModule(jyboss))

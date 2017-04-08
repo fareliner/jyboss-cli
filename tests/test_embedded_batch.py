@@ -1,4 +1,4 @@
-from tests import *
+from . import *
 import simplejson as json
 
 from jyboss import *

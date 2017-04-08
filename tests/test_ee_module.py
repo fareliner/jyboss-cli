@@ -1,4 +1,4 @@
-from tests import *
+from . import *
 
 from jyboss.command import EEModule
 
@@ -15,9 +15,16 @@ class TestEEModule(JBossTest):
             self.context.interactive = True
             print('ee.present(update): %r' % changes)
             self.assertIsNotNone(changes)
-            self.assertTrue('ee' in changes)
-            self.assertEqual(1, len(changes['ee']))
-            self.assertEqual('default-bindings', changes['ee'][0]['service'])
-            self.assertTrue('action' in changes['ee'][0])
-            self.assertEqual('updated', changes['ee'][0]['action'])
+            self.assertEqual(1, len(changes))
+            change = changes[0]
+            self.assertTrue('service' in change)
+            self.assertEqual('default-bindings', change['service'])
+            self.assertTrue('changes' in change)
+            self.assertEqual(1, len(change['changes']))
+            action = change['changes'][0]
+            self.assertTrue('action' in action)
+            self.assertEqual('delete', action['action'])
+            self.assertTrue('attribute' in action)
+            self.assertEqual('datasource', action['attribute'])
+            self.assertTrue('old_value' in action)
             # TODO validate that the xml configuration written reflects these changes

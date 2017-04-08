@@ -1,4 +1,4 @@
-from tests import *
+from . import *
 
 from jyboss.command import DatasourcesModule
 
@@ -15,13 +15,12 @@ class TestDatasourcesModule(JBossTest):
             self.context.interactive = True
             print('datasource.present(add): %r' % changes)
             self.assertIsNotNone(changes)
-            self.assertTrue('datasources' in changes)
-            self.assertEqual(1, len(changes['datasources']))
-            change = changes['datasources'][0]
+            self.assertEqual(1, len(changes))
+            change = changes[0]
             self.assertTrue('datasource' in change)
             self.assertTrue('TestDS', change['datasource'])
             self.assertTrue('action' in change)
-            self.assertEqual('added', change['action'])
+            self.assertEqual('add', change['action'])
             # TODO validate that the xml configuration written reflects these changes
 
     @jboss_context(mode=MODE_EMBEDDED, interactive=False)
@@ -32,13 +31,12 @@ class TestDatasourcesModule(JBossTest):
             self.context.interactive = True
             print('datasource.present(update): %r' % changes)
             self.assertIsNotNone(changes)
-            self.assertTrue('datasources' in changes)
-            self.assertEqual(1, len(changes['datasources']))
-            change = changes['datasources'][0]
+            self.assertEqual(1, len(changes))
+            change = changes[0]
             self.assertTrue('datasource' in change)
             self.assertTrue('ExampleDS', change['datasource'])
             self.assertTrue('action' in change)
-            self.assertEqual('updated', change['action'])
+            self.assertEqual('update', change['action'])
             # TODO validate that the xml configuration written reflects these changes
 
     @jboss_context(mode=MODE_EMBEDDED, interactive=False)
@@ -49,13 +47,12 @@ class TestDatasourcesModule(JBossTest):
             self.context.interactive = True
             print('datasource.absent(): %r' % changes)
             self.assertIsNotNone(changes)
-            self.assertTrue('datasources' in changes)
-            self.assertEqual(1, len(changes['datasources']))
-            change = changes['datasources'][0]
+            self.assertEqual(1, len(changes))
+            change = changes[0]
             self.assertTrue('datasource' in change)
             self.assertTrue('ExampleDS', change['datasource'])
             self.assertTrue('action' in change)
-            self.assertEqual('deleted', change['action'])
+            self.assertEqual('delete', change['action'])
             # TODO validate that the xml configuration written reflects these changes
 
     @jboss_context(mode=MODE_EMBEDDED, interactive=False)
@@ -66,13 +63,12 @@ class TestDatasourcesModule(JBossTest):
             self.context.interactive = True
             print('jdbc-driver.present(add): %r' % changes)
             self.assertIsNotNone(changes)
-            self.assertTrue('datasources' in changes)
-            self.assertEqual(1, len(changes['datasources']))
-            change = changes['datasources'][0]
+            self.assertEqual(1, len(changes))
+            change = changes[0]
             self.assertTrue('jdbc-driver' in change)
             self.assertTrue('h2e', change['jdbc-driver'])
             self.assertTrue('action' in change)
-            self.assertEqual('added', change['action'])
+            self.assertEqual('add', change['action'])
             # TODO validate that the xml configuration written reflects these changes
 
     @jboss_context(config_file='test_jdbc_driver_updated.xml', mode=MODE_EMBEDDED, interactive=False)
@@ -92,11 +88,10 @@ class TestDatasourcesModule(JBossTest):
             self.context.interactive = True
             print('datasource.absent(): %r' % changes)
             self.assertIsNotNone(changes)
-            self.assertTrue('datasources' in changes)
-            self.assertEqual(1, len(changes['datasources']))
-            change = changes['datasources'][0]
+            self.assertEqual(1, len(changes))
+            change = changes[0]
             self.assertTrue('jdbc-driver' in change)
             self.assertTrue('h2e', change['jdbc-driver'])
             self.assertTrue('action' in change)
-            self.assertEqual('deleted', change['action'])
+            self.assertEqual('delete', change['action'])
             # TODO validate that the xml configuration written reflects these changes

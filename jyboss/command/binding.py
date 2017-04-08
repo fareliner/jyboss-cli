@@ -80,14 +80,14 @@ class SocketBindingModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.BINDING_PARAMS)
             if len(a_changes) > 0:
-                changes.append({'socket-binding': name, 'socket-binding-group': group_name, 'action': 'updated',
+                changes.append({'socket-binding': name, 'socket-binding-group': group_name, 'action': 'update',
                                 'changes': a_changes})
 
         except NotFoundError:
             binding_params = self.convert_to_dmr_params(binding, self.BINDING_PARAMS)
 
             self.cmd('%s:add(%s)' % (resource_path, binding_params))
-            changes.append({'socket-binding': name, 'socket-binding-group': group_name, 'action': 'added',
+            changes.append({'socket-binding': name, 'socket-binding-group': group_name, 'action': 'add',
                             'params': binding_params})
 
         return changes
@@ -98,6 +98,6 @@ class SocketBindingModule(BaseJBossModule):
         resource_path = self.path % (group_name, name)
         try:
             self.cmd('%s:remove' % resource_path)
-            return [{'socket-binding': name, 'socket-binding-group': group_name, 'action': 'deleted'}]
+            return [{'socket-binding': name, 'socket-binding-group': group_name, 'action': 'delete'}]
         except NotFoundError:
             return []

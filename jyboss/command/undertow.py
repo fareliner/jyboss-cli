@@ -115,7 +115,7 @@ class UndertowFilterRefModule(BaseJBossModule):
         changes = []
         try:
             self.cmd(self.path % (server_name, host_name, name) + ':remove()')
-            changes.append({'filter_ref': name, 'action': 'deleted'})
+            changes.append({'filter_ref': name, 'action': 'delete'})
         except NotFoundError:
             pass
 
@@ -137,7 +137,7 @@ class UndertowFilterRefModule(BaseJBossModule):
                                               callback_handler=self._update_filter_ref_attribute)
 
             if len(a_changes) > 0:
-                changes.append({'filter-ref': name, 'action': 'updated', 'changes': a_changes})
+                changes.append({'filter-ref': name, 'action': 'update', 'changes': a_changes})
 
         except NotFoundError:
             # filter ref does not exist and we need to create it
@@ -149,7 +149,7 @@ class UndertowFilterRefModule(BaseJBossModule):
                     server_name, host_name, name, priority)
 
             self.cmd(cmd)
-            changes.append({'filter-ref': name, 'action': 'added'})
+            changes.append({'filter-ref': name, 'action': 'add'})
 
         return changes
 
@@ -174,7 +174,7 @@ class UndertowFilterRefModule(BaseJBossModule):
 
             change = {
                 'attribute': name,
-                'action': 'updated',
+                'action': 'update',
                 'old_value': old_value,
                 'new_value': new_value
             }
@@ -249,7 +249,7 @@ class UndertowFilterModule(BaseJBossModule):
         #     raise ProcessingError('failed to delete filter %s: %s' % (name, failure))
         try:
             self.cmd('%s/%s=%s:remove()' % (self.path, filter_type, filter_name))
-            changes.append({'filter': filter_name, 'type': filter_type, 'action': 'deleted'})
+            changes.append({'filter': filter_name, 'type': filter_type, 'action': 'delete'})
         except NotFoundError:
             pass
 
@@ -271,12 +271,12 @@ class UndertowFilterModule(BaseJBossModule):
                                               allowable_attributes=self.FILTER_PARAMS.get(filter_type, []))
 
             if len(a_changes) > 0:
-                changes.append({'filter': filter_name, 'type': filter_type, 'action': 'updated', 'changes': a_changes})
+                changes.append({'filter': filter_name, 'type': filter_type, 'action': 'update', 'changes': a_changes})
 
         except NotFoundError:
             filter_params = self.convert_to_dmr_params(filter_config, self.FILTER_PARAMS.get(filter_type, []))
             self.cmd('%s/%s=%s:add(%s)' % (self.path, filter_type, filter_name, filter_params))
-            changes.append({'filter': filter_name, 'type': filter_type, 'action': 'added', 'params': filter_params})
+            changes.append({'filter': filter_name, 'type': filter_type, 'action': 'add', 'params': filter_params})
 
         return changes
 
@@ -344,13 +344,13 @@ class UndertowListenerModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.listener_params)
             if len(a_changes) > 0:
-                changes.append({self.listener_type: name, 'action': 'updated',
+                changes.append({self.listener_type: name, 'action': 'update',
                                 'changes': a_changes})
 
         except NotFoundError:
             listener_add_params = self.convert_to_dmr_params(listener, self.listener_params)
             self.cmd('%s:add(%s)' % (resource_path, listener_add_params))
-            changes.append({self.listener_type: name, 'action': 'added',
+            changes.append({self.listener_type: name, 'action': 'add',
                             'params': listener_add_params})
 
         return changes
@@ -363,7 +363,7 @@ class UndertowListenerModule(BaseJBossModule):
 
         try:
             self.cmd('%s:remove' % resource_path)
-            return [{self.listener_type: name, 'action': 'deleted'}]
+            return [{self.listener_type: name, 'action': 'delete'}]
         except NotFoundError:
             return []
 

@@ -61,7 +61,7 @@ class InfinispanModule(BaseJBossModule):
             self.read_resource(self.path, recursive=False)
         except NotFoundError:
             self.cmd('%s:add()' % self.path)
-            changes.append({'subsystem': 'infinispan', 'action': 'added'})
+            changes.append({'subsystem': 'infinispan', 'action': 'add'})
 
         for key in infinispan:
             # first check if a submodule handler exists for the key element
@@ -83,7 +83,7 @@ class InfinispanModule(BaseJBossModule):
         try:
             self.read_resource_dmr(self.path)
             self.cmd('%s:remove()' % self.path)
-            changes.append({'subsystem': 'infinispan', 'action': 'deleted'})
+            changes.append({'subsystem': 'infinispan', 'action': 'delete'})
         except NotFoundError:
             pass
 
@@ -131,7 +131,7 @@ class CacheContainerModule(BaseJBossModule):
         name = self._get_param(stack, 'name')
         try:
             self.cmd((self.path + ':remove()') % name)
-            return [{'cache-container': name, 'action': 'deleted'}]
+            return [{'cache-container': name, 'action': 'delete'}]
         except NotFoundError:
             return []
 
@@ -154,13 +154,13 @@ class CacheContainerModule(BaseJBossModule):
                                                    target_state=fc,
                                                    allowable_attributes=self.CONTAINER_PARAMS)
             if len(update_changes) > 0:
-                change['action'] = 'updated'
+                change['action'] = 'update'
                 change['changes'] += update_changes
 
         except NotFoundError:
             container_params = self.convert_to_dmr_params(container, self.CONTAINER_PARAMS)
             self.cmd('%s:add(%s)' % (container_path, container_params))
-            change['action'] = 'added'
+            change['action'] = 'add'
             if len(container_params) > 0:
                 change['params'] = container_params
 
@@ -171,7 +171,7 @@ class CacheContainerModule(BaseJBossModule):
                 modchanges = handler.apply(container_name, container[key])
                 if len(modchanges) > 0:
                     if change['action'] is None:
-                        change['action'] = 'updated'
+                        change['action'] = 'update'
                     change['changes'] += modchanges
             elif key in ['state', 'name'] + CacheContainerModule.CONTAINER_PARAMS:
                 pass  # not interested in these ones as they would have been processed above already
@@ -216,7 +216,7 @@ class TransportModule(BaseJBossModule):
 
         try:
             self.cmd((self.path + ':remove()') % container_name)
-            return [{'transport': 'TRANSPORT', 'action': 'deleted'}]
+            return [{'transport': 'TRANSPORT', 'action': 'delete'}]
         except NotFoundError:
             return []
 
@@ -237,13 +237,13 @@ class TransportModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.TRANSPORT_PARAMS)
             if len(a_changes) > 0:
-                change['action'] = 'updated'
+                change['action'] = 'update'
                 change['changes'] += a_changes
 
         except NotFoundError:
             transport_params = self.convert_to_dmr_params(transport, self.TRANSPORT_PARAMS)
             self.cmd('%s:add(%s)' % (transport_path, transport_params))
-            change['action'] = 'added'
+            change['action'] = 'add'
             if len(transport_params) > 0:
                 change['params'] = transport_params
 
@@ -346,7 +346,7 @@ class Cache(BaseJBossModule):
         cache_type = self._get_param(cache, 'type')
         try:
             self.cmd((self.path + ':remove()') % (container_name, cache_type, cache_name))
-            return [{cache_type: cache_name, 'action': 'deleted'}]
+            return [{cache_type: cache_name, 'action': 'delete'}]
         except NotFoundError:
             return []
 
@@ -370,13 +370,13 @@ class Cache(BaseJBossModule):
                                                  target_state=fc,
                                                  allowable_attributes=self.cache_params)
             if len(attr_changes) > 0:
-                change['action'] = 'updated'
+                change['action'] = 'update'
                 change['changes'] += attr_changes
 
         except NotFoundError:
             cache_params = self.convert_to_dmr_params(cache, self.cache_params)
             self.cmd('%s:add(%s)' % (cache_path, cache_params))
-            change['action'] = 'added'
+            change['action'] = 'add'
             if len(cache_params) > 0:
                 change['params'] = cache_params
 
@@ -472,7 +472,7 @@ class Component(BaseJBossModule):
     def apply_absent(self, container_name, cache_type, cache_name):
         try:
             self.cmd((self.path + ':remove()') % (container_name, cache_type, cache_name, self.component_type))
-            return [{'component': self.component_type, 'action': 'deleted'}]
+            return [{'component': self.component_type, 'action': 'delete'}]
         except NotFoundError:
             return []
 
@@ -493,13 +493,13 @@ class Component(BaseJBossModule):
                                                  target_state=fc,
                                                  allowable_attributes=self.component_params)
             if len(attr_changes) > 0:
-                change['action'] = 'updated'
+                change['action'] = 'update'
                 change['changes'] += attr_changes
 
         except NotFoundError:
             config_params = self.convert_to_dmr_params(config, self.component_params)
             self.cmd('%s:add(%s)' % (config_path, config_params))
-            change['action'] = 'added'
+            change['action'] = 'add'
             if len(config_params) > 0:
                 change['params'] = config_params
 

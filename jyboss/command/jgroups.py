@@ -68,7 +68,7 @@ class JGroupsModule(BaseJBossModule):
             self.read_resource(self.path, recursive=True)
         except NotFoundError:
             self.cmd('%s:add()' % self.path)
-            changes.append({'subsystem': 'jgroups', 'action': 'added'})
+            changes.append({'subsystem': 'jgroups', 'action': 'add'})
 
         for key in jgroups:
             if key in self.CONFIG_SUBMODULE:
@@ -99,7 +99,7 @@ class JGroupsModule(BaseJBossModule):
         try:
             self.read_resource_dmr(self.path)
             self.cmd('%s:remove()' % self.path)
-            changes.append({'subsystem': 'jgroups', 'action': 'deleted'})
+            changes.append({'subsystem': 'jgroups', 'action': 'delete'})
         except NotFoundError:
             pass
 
@@ -148,7 +148,7 @@ class JGroupsStackModule(BaseJBossModule):
         name = self._get_param(stack, 'name')
         try:
             self.cmd((self.path + ':remove()') % name)
-            return [{'stack': name, 'action': 'deleted'}]
+            return [{'stack': name, 'action': 'delete'}]
         except NotFoundError:
             return []
 
@@ -161,7 +161,7 @@ class JGroupsStackModule(BaseJBossModule):
             self.read_resource_dmr(stack_path, recursive=True)
         except NotFoundError:
             self.cmd('%s:add()' % stack_path)
-            changes.append({'stack': name, 'action': 'added'})
+            changes.append({'stack': name, 'action': 'add'})
 
         # now sync sub items
         for k, v in iteritems(stack):
@@ -189,7 +189,7 @@ class JGroupsStackModule(BaseJBossModule):
             if tname not in ['TRANSPORT', name]:
                 try:
                     self.cmd('%s:remove()' % transport_path)
-                    changes.append({'transport': name, 'action': 'deleted'})
+                    changes.append({'transport': name, 'action': 'delete'})
                 except NotFoundError:
                     pass
 
@@ -204,13 +204,13 @@ class JGroupsStackModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.TRANSPORT_PARAMS)
             if len(a_changes) > 0:
-                changes.append({'transport': name, 'action': 'updated', 'changes': a_changes})
+                changes.append({'transport': name, 'action': 'update', 'changes': a_changes})
         except NotFoundError:
             tp = copy.deepcopy(transport)
             tp['type'] = name
             transport_params = self.convert_to_dmr_params(tp, self.TRANSPORT_PARAMS + ['type'])
             self.cmd('%s:add(%s)' % (transport_path, transport_params))
-            changes.append({'transport': name, 'action': 'added', 'params': transport_params})
+            changes.append({'transport': name, 'action': 'add', 'params': transport_params})
 
         return changes
 
@@ -248,7 +248,7 @@ class JGroupsStackModule(BaseJBossModule):
                             changes.append({
                                 'protocol': protocol_type,
                                 'property': p_k,
-                                'action': 'deleted'
+                                'action': 'delete'
                             })
                     # then we check if we need to compare both
                     elif p_k in old_properties:
@@ -265,7 +265,7 @@ class JGroupsStackModule(BaseJBossModule):
                             changes.append({
                                 'protocol': protocol_type,
                                 'property': p_k,
-                                'action': 'updated',
+                                'action': 'update',
                                 'old_value': p_vo,
                                 'new_value': p_vn
                             })
@@ -277,7 +277,7 @@ class JGroupsStackModule(BaseJBossModule):
                         changes.append({
                             'protocol': protocol_type,
                             'property': p_k,
-                            'action': 'added',
+                            'action': 'add',
                             'new_value': p_vn
                         })
 
@@ -286,7 +286,7 @@ class JGroupsStackModule(BaseJBossModule):
             old_protos = self.ls((self.path % stack_name) + '/protocol', silent=True)
             for old_proto in old_protos:
                 self.cmd((self.path % stack_name) + ('/protocol=%s:remove()' % old_proto))
-                changes.append({'protocol': old_proto, 'action': 'deleted'})
+                changes.append({'protocol': old_proto, 'action': 'delete'})
             # add new set
             for new_proto in protocols:
                 protocol_type = self._get_param(new_proto, 'type')
@@ -299,7 +299,7 @@ class JGroupsStackModule(BaseJBossModule):
                     if p_v is not None:
                         self.cmd('{0}/protocol={1}/property={2}/:add(value={3})' \
                                  .format(self.path % stack_name, protocol_type, p_k, p_v))
-                changes.append({'protocol': protocol_type, 'action': 'added', 'parameters': proto_params,
+                changes.append({'protocol': protocol_type, 'action': 'add', 'parameters': proto_params,
                                 'properties': properties})
 
         return changes
@@ -366,7 +366,7 @@ class JGroupsChannelModule(BaseJBossModule):
         name = self._get_param(stack, 'name')
         try:
             self.cmd((self.path + ':remove()') % name)
-            return [{'channel': name, 'action': 'deleted'}]
+            return [{'channel': name, 'action': 'delete'}]
         except NotFoundError:
             return []
 
@@ -384,11 +384,11 @@ class JGroupsChannelModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.CHANNEL_PARAMS)
             if len(a_changes) > 0:
-                changes.append({'realm': name, 'action': 'updated', 'changes': a_changes})
+                changes.append({'realm': name, 'action': 'update', 'changes': a_changes})
 
         except NotFoundError:
             channel_params = self.convert_to_dmr_params(channel, self.CHANNEL_PARAMS)
             self.cmd('%s:add(%s)' % (channel_path, channel_params))
-            changes.append({'channel': name, 'action': 'added', 'params': channel_params})
+            changes.append({'channel': name, 'action': 'add', 'params': channel_params})
 
         return changes

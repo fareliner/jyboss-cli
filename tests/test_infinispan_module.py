@@ -1,4 +1,4 @@
-from tests import *
+from . import *
 
 from jyboss.command import InfinispanModule
 
@@ -15,9 +15,25 @@ class TestInfinispanModule(JBossTest):
             self.context.interactive = True
             print('container.present(add): %r' % changes)
             self.assertIsNotNone(changes)
-            self.assertEqual(1, len(changes))
-            self.assertTrue(1, 'subsystem' in changes[0])
-            self.assertEquals('infinispan', changes[0]['subsystem'])
-            self.assertTrue(1, 'changes' in changes[0])
-            self.assertEqual(1, len(changes[0]['changes']))
-            pass
+            self.assertEqual(3, len(changes))
+            change = changes[0]
+            self.assertTrue('cache-container' in change)
+            self.assertEquals('FancyCache', change['cache-container'])
+            self.assertTrue('action' in change)
+            self.assertEquals('add', change['action'])
+            # test the next on
+            change = changes[1]
+            self.assertTrue('cache-container' in change)
+            self.assertEquals('web', change['cache-container'])
+            self.assertTrue('action' in change)
+            self.assertEquals('update', change['action'])
+            self.assertTrue('changes' in change)
+            self.assertEquals(1, len(change['changes']))
+            # test the next on
+            change = changes[2]
+            self.assertTrue('cache-container' in change)
+            self.assertEquals('NotSoFancy', change['cache-container'])
+            self.assertTrue('action' in change)
+            self.assertEquals('add', change['action'])
+            self.assertTrue('changes' in change)
+            self.assertEquals(4, len(change['changes']))

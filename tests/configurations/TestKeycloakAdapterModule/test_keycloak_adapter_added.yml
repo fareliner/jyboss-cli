@@ -1,0 +1,20 @@
+---
+keycloak_adapter:
+  realm:
+    - name: myrealm
+      state: present
+      realm_public_key: "MIIBIjANBgkq...A"
+      auth_server_url: 'https://login.server.com/auth'
+      ssl_required: none
+      enable_cors: false
+      principal_attribute: preferred_username
+  secure_deployment:
+    - name: myapp.war
+      state: present
+      resource: myrealm
+      credential:
+        type: secret
+        value: "5af5458f-0a96-4251-8f92-08ebcc3a8aa2"
+      disable_trust_manager: true
+      bearer_only: true
+      enable_basic_auth: true
