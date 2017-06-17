@@ -1,3 +1,2 @@
-jyboss
 PyYAML>=3.0
 simplejson >= 3.1
