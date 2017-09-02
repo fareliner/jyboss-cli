@@ -13,10 +13,7 @@ Download the packaged [JyBoss module](https://github.com/fareliner/jyboss-cli/re
 Example `pip` Installation:
 
 ```sh
-curl -L -o jyboss-0.2.1.tar.gz \
-     https://github.com/fareliner/jyboss-cli/releases/download/v0.2.1/jyboss-0.2.1.tar.gz
-
-pip install -U jyboss-0.2.1.tar.gz
+pip install -U jyboss
 ```
 
 ### Limitations
@@ -30,7 +27,7 @@ Given this module uses the JBoss CLI client package, one must make sure this jar
 Example Environment:
 
 ```sh
-$ export JYTHON_HOME=/opt/jython-2.7.0
+$ export JYTHON_HOME=/opt/jython-2.7.1
 $ export JBOSS_HOME=/opt/jboss-eap-7.0
 $ export PATH=$JYTHON_HOME/bin:$PATH
 $ jython
@@ -186,7 +183,7 @@ jython setup.py sdist --formats=gztar,zip
 
 ### Dev Notes
 
-Connect to running jboss server:
+**Connect to a running JBoss Server**
 
 ```cmd
 set "CLASSPATH=%JAVA_HOME%\lib\jconsole.jar"
@@ -194,3 +191,14 @@ set "CLASSPATH=%CLASSPATH%;%JAVA_HOME%\lib\tools.jar"
 set "CLASSPATH=%CLASSPATH%;%cd%\tests\bin\client\jboss-cli-client.jar"
 jconsole service:jmx:remote+http://wildfly.vagrant.v8:9990
 ```
+
+**Configuring PyCharm**
+
+Mark project root as source folder
+
+Unit Test configuration
+
+* Select Path : `{workspaces}/jyboss-cli/tests`
+* Working Directory: `{workspaces}/jyboss-cli`
+* Add context root to PYTHONPATH: unchecked
+* Add sources root to PYTHONPATH: checked
