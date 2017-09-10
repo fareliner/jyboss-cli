@@ -13,7 +13,7 @@ class TestExtensionModule(JBossTest):
             args = self.load_yaml()
             changes = ExtensionModule(self.context).apply(**args)
             self.context.interactive = True
-            print('ext.present(): %r' % changes)
+            print('ext.present(): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             self.assertTrue('extension' in changes[0])
@@ -27,7 +27,7 @@ class TestExtensionModule(JBossTest):
             args = self.load_yaml()
             changes = ExtensionModule(self.context).apply(**args)
             self.context.interactive = True
-            print('ext.absent(): %r' % changes)
+            print('ext.absent(): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(2, len(changes))
             self.assertTrue('extension' in changes[1])

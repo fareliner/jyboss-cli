@@ -13,7 +13,7 @@ class TestInfinispanModule(JBossTest):
             args = self.load_yaml()
             changes = InfinispanModule(self.context).apply(**args)
             self.context.interactive = True
-            print('container.present(add): %r' % changes)
+            print('container.present(add): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(3, len(changes))
             change = changes[0]

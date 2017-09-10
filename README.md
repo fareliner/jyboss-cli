@@ -1,6 +1,18 @@
 # JyBoss - Manage JBoss from Jython
 
-A python module that can be used with Jython to manage JBoss/Wildfly using the jboss scripting cli library.    
+<p align="center">
+  <a href="https://pypi.python.org/pypi/jyboss">
+    <img src="https://img.shields.io/pypi/v/jyboss.svg" alt="pypi version">
+  </a>
+  <a href="https://github.com/fareliner/jyboss-cli/releases">
+    <img src="https://img.shields.io/github/downloads/fareliner/jyboss-cli/total.svg" alt="jyboss downloads">
+  </a>
+  <a href="https://pypi.python.org/pypi/jyboss">
+    <img src="https://img.shields.io/pypi/l/jyboss.svg" alt="jyboss license">
+  </a>
+</p>
+
+A jython module to automate JBoss/Wildfly server configuration either via the jython shell or Ansible. The jyboss modules use the jboss scripting cli library.    
 
 ### Prerequisites
 
@@ -8,21 +20,21 @@ The target machine on which to run this module must have Java 8 and [Jython 2.7]
 
 ### Installation
 
-Download the packaged [JyBoss module](https://github.com/fareliner/jyboss-cli/releases/latest) and install it with pip (make sure its the jython pip and not the python one installed with the typical OS).
-
-Example `pip` Installation:
+The module can be installed using `pip` with Jython 2.7.x.
 
 ```sh
 pip install -U jyboss
 ```
 
+Alterantively one can also download the packaged [JyBoss module](https://github.com/fareliner/jyboss-cli/releases/latest) and install it with pip (ensure the pip in use is the jython pip and not the python version which is typically installed with the operating system).
+
 ### Limitations
 
-Requires at least ansible 2.0.2.0 if running the module with become_user due to an ansible bug issue [#14348](https://github.com/ansible/ansible/issues/14348)).
+Requires at least ansible 2.0.2.0 if running the module with `become_user` due to an ansible bug issue [#14348](https://github.com/ansible/ansible/issues/14348)).
 
 ### Usage
 
-Given this module uses the JBoss CLI client package, one must make sure this jar is in the `CLASSPATH` or that the `JBOSS_HOME` variable is set in the environment.
+Given this module uses the JBoss CLI client package, one must make sure the `jboss-cli-client.jar` is in the `CLASSPATH` or that the `JBOSS_HOME` variable is set in the environment.
 
 Example Environment:
 
@@ -41,21 +53,23 @@ Start the server you like to manage, import the JyBoss, connect and hack away.
 #! /usr/bin/env jython
 from jyboss import *
 
-connect()
-cd("/subsystem=datasources/data-source")
+embedded.connect()
+cd('/subsystem=datasources/data-source')
 ls()
- [
+'''
+[
     "ExampleDS",
     "ApimanDS"
- ]
+]
+'''
 
-cd("ExampleDS")
+cd('ExampleDS')
 
 # you can use pretty much any of the commands possible on the normal cli
-# only difference is, the output is proper json with field names are also valid in YAML
-cmd(":read-resource(attributes-only=true, include-defaults=false)")
+cmd(':read-resource(attributes-only=true, include-defaults=false)')
+'''
 {
-    "result": {
+    "response": {
         "connectable": false,
         "track_statements": "NOWARN",
         "connection_url": "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
@@ -63,7 +77,20 @@ cmd(":read-resource(attributes-only=true, include-defaults=false)")
          ...
      }
 }
+'''
 
+# to assign command output to variables, change to non-interactive mode 
+embedded.context.interactive=False
+# issue any kind of command and assign the result to a variable 
+r = ls('/subsystem=datasources/data-source=ExampleDS')
+print(r['children'])
+'''
+[u'connection-properties']
+'''
+
+# also ensure to disconnect when done (or use automatic resource management described below)
+if embedded.context.is_connected():
+    embedded.disconnect()
 ```
 
 JyBoss also imports is also a Connection resource that can be used to handle the connection lifecycle using pythons with resource management (works like the file modules).
@@ -78,12 +105,13 @@ from jyboss import *
 # connection takes the same arguments as the static connect() command
 with standalone as conn:  
   # you now have a valid session
-  # jyboss context is available and so is the actual Jboss CLI
-  print "the jyboss context: ", conn.context
-  print "the jyboss context: ", conn.jcli
-  conn.context.noninteractive() # if you want to assign the dict/list values of the commands to variables
+  # jyboss context is available and so is the actual JBoss CLI
+  print "the jyboss connection context: ", conn.context
+  print "the jboss jcli: ", conn.jcli
 
-  cd("/")
+  # if you want to assign the dict/list values of the commands to variables
+  conn.context.interactive = False
+  cd('/')
   r = ls()
   print json.dumps(r, indent=4)
 
@@ -127,8 +155,6 @@ A few weeks ago I tried to automate the installation and setup of JBoss AS with 
 So where from here? After some fiddling around with `jython`, the `jboss-cli-client.jar` and `ansible` I managed to produce a [custom ansible jython module](https://github.com/fareliner/ansible-custom-jython-module). Things got much more sophisticated much more quickly from the initial hack jython script that I decised to separate the ansible module from the jython wrapper.
 
 
-
-
 ### Example use of jboss-cli in Jython (the hard way)
 
 Basic use of the CLI looks something like this:
@@ -140,12 +166,14 @@ cli.connect()
 cmd = cli.cmd("ls /")
 if cmd.isSuccess():
     print cmd.getResponse()
-
 ```
+
 
 ### Controlling Output
 
-For ansible we need to make sure to disable all system output (such as the connection information echoed by the underlying jline cli. Have to find a better way to get a handler to the jboss cli internal console.
+Running this cli as an Ansible module, we need to make sure to disable all system output. Ansible module execution will break if the output to stdout is not valid JSON. The JBoss cli is unfortunately very inconsistent and random information is echoed by the underlying jline cli. There are some delegation methods in the code but some are protected and even if butchered, some things still leak to stdout and stderr.
+
+Below a simplified configuration to shut the cli up but the jyboss module also contains a set of Streams to redirect to syslog if available.
 
 ```py
 from java.lang import System
@@ -167,10 +195,8 @@ class NoopOutputStream(OutputStream):
   def close(flush):
      pass
 
-
 System.setOut(PrintStream(NoopOutputStream()))
 System.setErr(PrintStream(NoopOutputStream()))
-
 ```
 
 ### Building a Release
@@ -202,3 +228,7 @@ Unit Test configuration
 * Working Directory: `{workspaces}/jyboss-cli`
 * Add context root to PYTHONPATH: unchecked
 * Add sources root to PYTHONPATH: checked
+
+**Running Keycloak Tests**
+
+To run the keycloak unittest, one will have to download and unzip a keycloak server distribution and the wildfly adapter overlay according to the keycloak installation guide. then either set the `JBOSS_HOME` environment variable or update the `jboss-test.properties` file accordingly. 

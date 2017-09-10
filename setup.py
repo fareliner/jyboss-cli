@@ -84,7 +84,8 @@ setup(
     # prepare for testing with nose
     test_suite='nose.collector',
     tests_require=[
-        'nose'
+        'nose',
+        'pathlib2'
     ],
 
     # manually define packages

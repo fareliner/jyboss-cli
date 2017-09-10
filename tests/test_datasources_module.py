@@ -13,7 +13,7 @@ class TestDatasourcesModule(JBossTest):
             args = self.load_yaml()
             changes = DatasourcesModule(self.context).apply(**args)
             self.context.interactive = True
-            print('datasource.present(add): %r' % changes)
+            print('datasource.present(add): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             change = changes[0]
@@ -29,7 +29,7 @@ class TestDatasourcesModule(JBossTest):
             args = self.load_yaml()
             changes = DatasourcesModule(self.context).apply(**args)
             self.context.interactive = True
-            print('datasource.present(update): %r' % changes)
+            print('datasource.present(update): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             change = changes[0]
@@ -45,7 +45,7 @@ class TestDatasourcesModule(JBossTest):
             args = self.load_yaml()
             changes = DatasourcesModule(self.context).apply(**args)
             self.context.interactive = True
-            print('datasource.absent(): %r' % changes)
+            print('datasource.absent(): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             change = changes[0]
@@ -61,7 +61,7 @@ class TestDatasourcesModule(JBossTest):
             args = self.load_yaml()
             changes = DatasourcesModule(self.context).apply(**args)
             self.context.interactive = True
-            print('jdbc-driver.present(add): %r' % changes)
+            print('jdbc-driver.present(add): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             change = changes[0]
@@ -86,7 +86,7 @@ class TestDatasourcesModule(JBossTest):
             args = self.load_yaml()
             changes = DatasourcesModule(self.context).apply(**args)
             self.context.interactive = True
-            print('datasource.absent(): %r' % changes)
+            print('datasource.absent(): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             change = changes[0]

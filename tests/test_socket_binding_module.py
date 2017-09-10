@@ -41,7 +41,7 @@ class TestSocketBindingModule(JBossTest):
             args = self.load_yaml()
             changes = SocketBindingModule(self.context).apply(**args)
             self.context.interactive = True
-            print('binding.present(added): %r' % changes)
+            print('binding.present(added): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             self.assertTrue('socket-binding' in changes[0])
@@ -55,7 +55,7 @@ class TestSocketBindingModule(JBossTest):
             args = self.load_yaml()
             changes = SocketBindingModule(self.context).apply(**args)
             self.context.interactive = True
-            print('binding.present(added): %r' % changes)
+            print('binding.present(added): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             self.assertTrue('socket-binding' in changes[0])
@@ -69,7 +69,7 @@ class TestSocketBindingModule(JBossTest):
             args = self.load_yaml()
             changes = SocketBindingModule(self.context).apply(**args)
             self.context.interactive = True
-            print('binding.absent(not found): %r' % changes)
+            print('binding.absent(not found): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNone(changes)
 
     @jboss_context(mode=MODE_EMBEDDED, interactive=False)
@@ -78,7 +78,7 @@ class TestSocketBindingModule(JBossTest):
             args = self.load_yaml()
             changes = SocketBindingModule(self.context).apply(**args)
             self.context.interactive = True
-            print('binding.absent(deleted): %r' % changes)
+            print('binding.absent(deleted): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             self.assertTrue('socket-binding' in changes[0])

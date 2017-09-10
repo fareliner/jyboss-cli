@@ -13,7 +13,7 @@ class TestJGroupsModule(JBossTest):
             args = self.load_yaml()
             changes = JGroupsModule(self.context).apply(**args)
             self.context.interactive = True
-            print('stack.present(add): %r' % changes)
+            print('stack.present(add): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             self.assertTrue('stack' in changes[0])
@@ -24,7 +24,7 @@ class TestJGroupsModule(JBossTest):
             args = self.load_yaml()
             changes = JGroupsModule(self.context).apply(**args)
             self.context.interactive = True
-            print('stack.present(add): %r' % changes)
+            print('stack.present(add): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             self.assertTrue('stack' in changes[0])

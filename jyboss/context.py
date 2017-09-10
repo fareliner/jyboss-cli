@@ -392,6 +392,7 @@ class JyBossContext(ConfigurationChangeHandler):
     def _load_cli(self):
         try:
             # @formatter:off
+            # noinspection PyUnresolvedReferences
             from org.jboss.logmanager import LogManager as JBossLogManager
             from org.jboss.as.cli import CommandContextFactory
             from org.jboss.as.cli import CliInitializationException
@@ -401,6 +402,7 @@ class JyBossContext(ConfigurationChangeHandler):
             self._configure_classpath()
             try:
                 # @formatter:off
+                # noinspection PyUnresolvedReferences
                 from org.jboss.logmanager import LogManager as JBossLogManager
                 from org.jboss.as.cli import CommandContextFactory
                 from org.jboss.as.cli import CliInitializationException
@@ -436,7 +438,7 @@ class JyBossContext(ConfigurationChangeHandler):
         """
         jboss CLI does something dodgy and can't just append the cli.jar to the system path
         sys.path.append(jboss_home + "/bin/client/jboss-cli-client.jar")
-        instead we are going to add a URL classloader into the loader hirarchy of
+        instead we are going to add a URL classloader into the loader hierarchy of
         the current thread context
         """
         jboss_home_str = self.get_jboss_home()

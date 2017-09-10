@@ -327,7 +327,7 @@ class UndertowListenerModule(BaseJBossModule):
     def apply_listener_present(self, server_name, listener):
 
         debug('%s:add(): %r' % (self.__class__.__name__, listener))
-        debug('  >> alowwed_params: %r' % self.listener_params)
+        debug('  >> allowed_params: %r' % self.listener_params)
 
         name = self._get_param(listener, 'name')
 

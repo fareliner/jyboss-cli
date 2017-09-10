@@ -13,7 +13,7 @@ class TestInterfaceModule(JBossTest):
             args = self.load_yaml()
             changes = InterfaceModule(self.context).apply(**args)
             self.context.interactive = True
-            print('interfaces.present(add): %r' % changes)
+            print('interfaces.present(add): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             change = changes[0]
@@ -29,7 +29,7 @@ class TestInterfaceModule(JBossTest):
             args = self.load_yaml()
             changes = InterfaceModule(self.context).apply(**args)
             self.context.interactive = True
-            print('interfaces.present(update): %r' % changes)
+            print('interfaces.present(update): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             change = changes[0]
@@ -45,7 +45,7 @@ class TestInterfaceModule(JBossTest):
             args = self.load_yaml()
             changes = InterfaceModule(self.context).apply(**args)
             self.context.interactive = True
-            print('interfaces.absent(): %r' % changes)
+            print('interfaces.absent(): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             change = changes[0]
@@ -61,7 +61,7 @@ class TestInterfaceModule(JBossTest):
             args = self.load_yaml()
             changes = InterfaceModule(self.context).apply(**args)
             self.context.interactive = True
-            print('interfaces.update(): %r' % changes)
+            print('interfaces.update(): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             change = changes[0]

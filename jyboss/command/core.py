@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division, print_function)
 
 import inspect
 import re
+import collections
 from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 
@@ -11,7 +12,10 @@ from jyboss.logging import debug
 from jyboss.context import ConfigurationChangeHandler, JyBossContext
 
 try:
+    # noinspection PyUnresolvedReferences
     from java.lang import IllegalArgumentException
+    # noinspection PyUnresolvedReferences
+    from java.util import NoSuchElementException
 except ImportError as jpe:
     raise ContextError('Java packages are not available, please run this module with jython.', jpe)
 
@@ -38,6 +42,9 @@ else:
     def iteritems(d):
         return d.iteritems()
 
+# python 2 and 3 way of none type
+NoneType = type(None)
+
 __metaclass__ = type
 
 
@@ -47,18 +54,18 @@ class UndefinedType(object):
 
 undefined = type(UndefinedType())
 
-_expression_matcher = re.compile('^[\'\"]?(?:expression\s*[\'\"]?)?(\$\{.*\})[\'\"]*$')
+_expression_matcher = re.compile('^[\'\"]?(?:expression\s*)?[\'\"]?(.*\$\{.*\}[^\'\"]*)[\'\"]*$')
 _not_found_matcher = re.compile('WFLYCTL0030|WFLYCTL0216')
 
 
 def unescape_keys(d):
     """
-    Recursively proceses all dictionary keys and replaces '_' with '-' and '#' with '.' . Used to convert from YAML to
-    jboss format.
+    Recursively processes all dictionary keys and replaces '_' with '-' and '#' with '.' . This function is mainly used
+    to convert from YAML to jboss format.
 
-    :param d: an item to convert
+    :param d {object} - any type of item to unescape
 
-    :return: the escaped item
+    :return {object} - the unescaped object with keys all fixed up
     """
     if isinstance(d, dict):
         new = {}
@@ -76,12 +83,12 @@ def unescape_keys(d):
 
 def escape_keys(d):
     """
-    Recursively proceses all dictionary keys and replaces '-' with '_' and '.' with '#' . Used to convert from YAML to
-    jboss format.
+    Recursively processes all dictionary keys and replaces '-' with '_' and '.' with '#' . This function is mainly used
+    to convert from jboss to YAML format.
 
-    :param d: an item to convert
+    :param d {object} - any type of item to escape to be valid in YAML
 
-    :return: the escaped item
+    :return {object} - the escaped object with keys valid for YAML output
     """
     if isinstance(d, dict):
         new = {}
@@ -102,9 +109,11 @@ def escape_keys(d):
 
 def expression_deserializer(obj):
     """
-    Collapses json nodes that are dicts and have a key name of EXPRESSION_VALUE. This call can be used to
-    :param obj: the object to check
-    :return: the object or if expression value, the value of the object
+    Collapses json nodes that are dicts and have a key name of EXPRESSION_VALUE. This call can be used as an object
+    handler on the json.dumps method to collapse any DMR specific expression objects.
+
+    :param obj {object} - the dmr serialised object value to check
+    :return {object} - the object or if expression value, the value of the object
     """
     if isinstance(obj, dict) and 'EXPRESSION_VALUE' in obj:
         return obj['EXPRESSION_VALUE']
@@ -116,33 +125,117 @@ def converts_to_dmr(obj):
     """
     Converts a python dict or list to a jboss dmr string. This function can be used to generate complex jboss cli
     attribute arguments. See SecurityModule for example use.
-    :param obj: {dict|list} - the dict or list object to turn into a dmr string
-    :return: a dmr string that can be used in the cli commands
+
+    :param obj {dict|list} - The dict or list object to turn into a dmr string
+    :return {string} - a DMR string that can be used in the cli commands
     """
     return None if obj is None else json.dumps(obj, separators=(',', '=>'))
 
 
 def convert_to_dmr_params(args, allowable_attributes=None):
     """
-    Converts a dictionary of parameters into a "string" list that can be used in a add method call on the jboss cli)
-    :param args: {dict} - the argument key/value pair that needs to be turned into a param list
-    :param allowable_attributes: {list[string]} - a list of attribute names that will be included in the args string
-    :return: a string list of args formatted for the cli
+    Converts a dictionary of parameters into a "string" list that can be used in a add method call on the jboss cli).
+
+    :param args {dict} - the argument key/value pair that needs to be turned into a param list
+    :param allowable_attributes {list[string]} - a list of attribute names that will be included in the args string
+    :return: {string} - a string list of args formatted for the cli
     """
     result = ', '.join(
-        ['%s=%s' % (k, convert_type(v)) for k, v in iteritems(args) if k in allowable_attributes])
+        ['%s=%s' % (k, convert_type(v)) for k, v in iteritems(args) if
+         allowable_attributes is not None and k in allowable_attributes])
     return result
 
 
 def convert_type(obj):
+    """
+    Convert an object into a JSON string representation.
+
+    :param obj {object} - the object to convert
+    :return {string} - the object as a JSON string
+    """
     if isinstance(obj, basestring):
         m = _expression_matcher.match(obj)
         if m:
             return "\"%s\"" % m.group(1)
         else:
-            return "\"%s\"" % obj  # FIXME this needs to be reviewed as it is normally not required to wrap strings in cli
+            return "\"%s\"" % obj
+    if isinstance(obj, dict):
+        return '[' + ', '.join(['%s=%s' % (k, convert_type(v)) for (k, v) in iteritems(obj)]) + ']'
     else:
         return json.dumps(obj)
+
+
+def stringify_object(obj):
+    """
+    Stringify a python dict so we can better compare it to a JSON serialised DMR object.
+
+    :param obj {object} - the object to stringify
+    :return {object} - a stringyfied object of any sort
+    """
+    if isinstance(obj, dict):
+        return dict((k, stringify_object(v)) for k, v in iteritems(obj))
+    if isinstance(obj, list):
+        return [stringify_object(v) for v in obj]
+    if isinstance(obj, bool):
+        return unicode(obj).lower()
+    elif isinstance(obj, (int, long, basestring)):
+        return unicode(obj)
+    else:
+        raise ParameterError('Cannot convert object value %s of type %s to unicode' % (obj, type(obj)))
+
+
+def clean_python_value(obj, target_type_hint=None):
+    if obj is None:
+        return None
+    elif isinstance(obj, (int, long, bool)):
+        return obj if target_type_hint is None or target_type_hint == NoneType \
+            else target_type_hint(obj)
+    elif isinstance(obj, basestring):
+        try:
+            match = _expression_matcher.match(obj).group(1)  # why was expression parser using .search() ?
+        except AttributeError:  # no expression wrapping to clean
+            match = obj
+        return match if target_type_hint is None or target_type_hint == NoneType \
+            else target_type_hint(match)
+    elif isinstance(obj, list):
+        return list(clean_python_value(item) for item in obj)
+    elif isinstance(obj, dict):
+        return dict((k, clean_python_value(v)) for k, v in iteritems(obj))
+    else:
+        raise IllegalArgumentException('Value cannot be pre-processed for synching: %r' % obj)
+
+
+def convert_dmr_to_python(n):
+    # TODO barf if not a DMR node
+    if n is None \
+            or not n.isDefined() \
+            or n.type == n.type.UNDEFINED:
+        return None
+    elif n.type == n.type.INT:
+        return n.asInt()
+    elif n.type == n.type.LONG:
+        return n.asLong()
+    elif n.type == n.type.STRING:
+        return n.asString()
+    elif n.type == n.type.BOOLEAN:
+        return n.asBoolean()
+    elif n.type == n.type.EXPRESSION:
+        exp = n.asExpression()
+        return exp.getExpressionString()
+    elif n.type == n.type.LIST:
+        v_list = []
+        for _, v_list_node in enumerate(n.asList()):
+            i_v = convert_dmr_to_python(v_list_node)
+            v_list.append(i_v)
+        return v_list
+    elif n.type == n.type.OBJECT:
+        props = n.asPropertyList()
+        obj = {}
+        for prop in props:
+            obj[prop.name] = convert_dmr_to_python(prop.value)
+        return obj
+    else:
+        raise IllegalArgumentException('Node type cannot be converted to a python value: %r' % n)
 
 
 class CommandHandler(ConfigurationChangeHandler):
@@ -215,7 +308,7 @@ class CommandHandler(ConfigurationChangeHandler):
             return None
         else:
             node_str = node.toJSONString(True)
-            return json.loads(node_str)
+            return json.loads(node_str, object_hook=expression_deserializer)
 
     def _as_value_pair(self, node):
         pass
@@ -449,108 +542,60 @@ class BaseJBossModule(CommandHandler):
     def __init__(self, path, context=None):
         super(BaseJBossModule, self).__init__(context=context)
         self.path = path
-        self.ARG_TYPE_DISPATCHER = {
-            'UNDEFINED': self._cast_node_undefined,
-            'INT': self._cast_node_int,
-            'LONG': self._cast_node_long,
-            'STRING': self._cast_node_string,
-            'BOOLEAN': self._cast_node_boolean,
-            'EXPRESSION': self._cast_node_expression
-        }
+        self.compareLists = lambda x, y: collections.Counter(x) == collections.Counter(y)
 
-    @staticmethod
-    def _cast_node_undefined(n, v):
-        if n is None or not n.isDefined or (n.type == n.type.UNDEFINED) or (
-                        hasattr(n, 'type') and n.isDefined() and n.type == n.type.OBJECT):
-            v_a = None
+    def update_list(self, parent_path=None, name=None, old_value=None, new_value=None, **kwargs):
+        change = None
+        # check if both lists have the same content (ignoring order or elements)
+        if not self.compareLists(old_value, new_value):
+            # not the same, clear list and add all values of the new list
+            self.cmd('%s:list-clear(name=%s)' % (parent_path, name))
+            for i, v in enumerate(new_value):
+                self.cmd('%s:list-add(name=%s,index=%s,value="%s")' % (parent_path, name, i, v))
+            change = {
+                'attribute': name,
+                'action': 'update',
+                'old_value': old_value,
+                'new_value': new_value
+            }
+
+        return change
+
+    def update_object(self, parent_path=None, name=None, old_value=None, new_value=None, **kwargs):
+        change = None
+
+        if new_value is None and old_value is not None:
+            self.cmd('%s:undefine-attribute(name=%s)' % (parent_path, name))
+
+            change = {
+                'attribute': name,
+                'action': 'delete',
+                'old_value': old_value
+            }
+        elif new_value is not None and old_value is None:
+            self.cmd('%s:write-attribute(name=%s, value=%s)' % (parent_path, name, convert_type(new_value)))
+
+            change = {
+                'attribute': name,
+                'action': 'add',
+                'old_value': old_value,
+                'new_value': new_value
+            }
         else:
-            raise ParameterError('Node has a undefined type but contains some value: %r' % n)
-        # we have no means to work out what type this target value is supposed to have so just regurgitate
-        return v_a, v
+            new_value = stringify_object(new_value)
+            if new_value != old_value:
+                self.cmd('%s:write-attribute(name=%s, value=%s)' % (parent_path, name, convert_type(new_value)))
 
-    @staticmethod
-    def _cast_node_int(n, v):
-        v_a = None if n is None else n.asInt()
+                change = {
+                    'attribute': name,
+                    'action': 'update',
+                    'old_value': old_value,
+                    'new_value': new_value
+                }
+                # we can't compare objects here since we don't know that their types would be
+                # best we can do is turn all fields into string and compare strings
 
-        if v is None:
-            v_t = None
-        elif isinstance(v, int):
-            v_t = int(v)
-        else:
-            try:
-                v_t = _expression_matcher.match(v).group(1)
-            except AttributeError:
-                v_t = int(v)
-
-        return v_a, v_t
-
-    @staticmethod
-    def _cast_node_long(n, v):
-        v_a = None if n is None else n.asLong()
-
-        if v is None:
-            v_t = None
-        elif isinstance(v, (int, long)):
-            v_t = long(v)
-        else:
-            try:
-                v_t = _expression_matcher.match(v).group(1)
-            except AttributeError:
-                v_t = long(v)
-
-        return v_a, v_t
-
-    @staticmethod
-    def _cast_node_string(n, v):
-        v_a = None if n is None else str(n.asString())
-
-        if v is None:
-            v_t = None
-        else:
-            try:
-                v_t = _expression_matcher.match(v).group(1)
-            except AttributeError:
-                v_t = str(v)
-
-        return v_a, v_t
-
-    @staticmethod
-    def _cast_node_boolean(n, v):
-        v_a = None if n is None else n.asBoolean()
-
-        if v is None:
-            v_t = None
-        elif type(v) is bool:
-            v_t = v
-        else:
-            try:
-                v_t = _expression_matcher.match(v).group(1)
-            except AttributeError:
-                v_t = bool(v)
-
-        return v_a, v_t
-
-    @staticmethod
-    def _cast_node_expression(n, v):
-        if n is None:
-            v_a = None
-        else:
-            exp = n.asExpression()
-            exp_val = exp.getExpressionString()
-            v_a = str(exp_val)
-
-        if v is None:
-            v_t = None
-        elif not isinstance(v, basestring):
-            v_t = str(v)
-        else:
-            try:
-                v_t = re.search('^(?:expression\s*)?(\$\{.*})$', v).group(1)
-            except AttributeError:
-                # TODO should probably use reflection on the node to work out what value the node can accept
-                v_t = str(v)
-
-        return v_a, v_t
+        return change
 
     def update_attribute(self, parent_path=None, name=None, old_value=None, new_value=None, **kwargs):
 
@@ -569,7 +614,7 @@ class BaseJBossModule(CommandHandler):
 
             change = {
                 'attribute': name,
-                'action': 'update',
+                'action': 'add' if new_value is not None and old_value is None else 'update',
                 'old_value': old_value,
                 'new_value': new_value
             }
@@ -591,6 +636,12 @@ class BaseJBossModule(CommandHandler):
         """
         if parent_node is None:
             raise ParameterError('A parent node must be provided.')
+
+        # noinspection PyUnresolvedReferences
+        from org.jboss.dmr import ModelNode
+
+        if not isinstance(parent_node, ModelNode):
+            raise ParameterError('A parent node is not a jboss dmr ModelNode.')
 
         if parent_path is None:
             raise ParameterError('A parent node path must be provided')
@@ -618,21 +669,38 @@ class BaseJBossModule(CommandHandler):
                 raise NotImplementedError(
                     'Setting attribute %s is not supported by this module. Node path is %s' % (k_t, parent_path))
 
-            attr = parent_node.get(k_t)
-            attr_type = 'UNDEFINED' if attr is None else str(attr.type)
+            if parent_node.has(k_t):
+                attr = parent_node.require(k_t)
+            else:
+                raise ParameterError('%s.sync_attr: synchronizing attribute %s is not supported on jboss node %s' % (
+                    self.__class__.__name__, k_t, parent_path))
 
-            if attr_type not in self.ARG_TYPE_DISPATCHER:
+            # convert the attribute value to a comparable python value
+            try:
+                v_a = convert_dmr_to_python(attr)
+            except IllegalArgumentException:
                 raise ParameterError('%s.sync_attr: synchronizing attribute %s of type %s is not supported' % (
-                    self.__class__.__name__, k_t, attr_type))
+                    self.__class__.__name__, k_t, attr.type))
 
-            dp = self.ARG_TYPE_DISPATCHER[attr_type]
-            v_a, v_t = dp(attr, v_t)
+            # also need to ensure the v_t is escaped/cleaned so we can compare
+            v_t = clean_python_value(v_t, type(v_a))
+
             debug('%s.sync_attr: param %s of type %s will be processed old[%r] new[%r]' % (
-                self.__class__.__name__, k_t, attr_type, v_a, v_t))
+                self.__class__.__name__, k_t, attr.type, v_a, v_t))
 
             callback_args['name'] = k_t
             callback_args['old_value'] = v_a
             callback_args['new_value'] = v_t
+
+            # if either value is of type list, we need to engage a different callback handler as syncing list is
+            # not as simple as updating single value attributes, if both are undefined we don't really care and
+            # if their types differ, the caster would have already thrown a tantrum
+            if isinstance(v_a, list) or isinstance(v_t, list):
+                callback_handler = self.update_list
+
+            if isinstance(v_a, dict) or isinstance(v_t, dict):
+                callback_handler = self.update_object
+
             change = callback_handler(**callback_args)
             if change is not None:
                 changes.append(change)
@@ -641,9 +709,10 @@ class BaseJBossModule(CommandHandler):
 
     def _get_param(self, obj, name, default=undefined):
         """
-        extracts a parameter from the provided configuration object
+        Extracts a parameter from the provided configuration object.
+
         :param obj {dict} - the object to check
-        :param name {str} - the name of the param to get
+        :param name {string} - the name of the param to get
         :param default {any} - will be returned if the object is None or the name is not in the obj
         :return {any} - whatever this param is set to
         """
@@ -659,6 +728,17 @@ class BaseJBossModule(CommandHandler):
                 return default
         else:
             return obj[name]
+
+    def read_attribute_dmr(self, resource_path, attribute_name):
+        """
+        Read a resource and return it as a dmr node
+
+        :param resource_path {string} - the absolute or relative path to the attribute parent from which to read
+        :param attribute_name {string} - the attribute name to read
+        :return {ModelNode} - a dmr result node
+        """
+        cmd = '%s:read-attribute(name=%s)' % (resource_path, attribute_name)
+        return self.cmd_dmr(cmd)
 
     def read_resource_dmr(self, resource_path, recursive=False):
         """

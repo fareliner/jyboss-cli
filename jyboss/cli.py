@@ -12,6 +12,7 @@ except ImportError as jpe:
 
 try:
     # @formatter:off
+    # noinspection PyUnresolvedReferences
     from org.jboss.as.cli import CliInitializationException, CommandContext, CommandContextFactory, CommandFormatException, CommandLineException
     from org.jboss.as.cli.impl import CommandContextConfiguration
     from org.jboss.dmr import ModelNode
@@ -66,7 +67,7 @@ class Cli(object):
         except URISyntaxException as e:
             raise IllegalStateException("Unable to construct URI.", e)
 
-    def embedded(self, jboss_home, server_config=None ):
+    def embedded(self, jboss_home, server_config=None):
         self.check_already_connected()
         try:
             self.ctx = CommandContextFactory.getInstance().newCommandContext()

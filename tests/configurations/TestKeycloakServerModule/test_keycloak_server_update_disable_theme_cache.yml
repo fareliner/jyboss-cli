@@ -1,0 +1,6 @@
+---
+keycloak_server:
+  state: present
+  theme:
+    state: present
+    cacheThemes: no

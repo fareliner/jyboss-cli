@@ -1,0 +1,6 @@
+---
+keycloak_server:
+  state: present
+  master_realm_name: master
+  web_context: testroot
+  scheduled_task_interval: 900

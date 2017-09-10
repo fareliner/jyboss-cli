@@ -1,0 +1,21 @@
+---
+keycloak_server:
+  state: present
+  spi:
+    - name: test
+      state: present
+      default_provider: testProviderOne
+      providers:
+        - name: testProviderOne
+          state: present
+          enabled: yes
+          properties:
+            minVal: 10
+            maxVal: 30
+            message: hello
+        - name: testProviderTwo
+          state: present
+          enabled: no
+          properties:
+            update: no
+            reason: changed during testing

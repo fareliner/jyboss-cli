@@ -1,0 +1,24 @@
+---
+keycloak_server:
+  state: present
+  spi:
+    - name: test
+      state: present
+      default_provider: testProviderTwo
+      providers:
+        - name: testProviderOne
+          state: present
+          enabled: no
+          # properties are unique object maps, the configuration must be provided in
+          # full as it will be "replaced" in full
+          properties:
+            minVal: 10
+            maxVal: 30
+            message: hello
+        - name: testProviderTwo
+          state: present
+          enabled: yes
+          properties:
+            update: yes
+            # nuked this one
+            #reason: just testing

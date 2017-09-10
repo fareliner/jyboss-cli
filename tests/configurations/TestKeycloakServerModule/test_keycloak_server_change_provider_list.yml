@@ -1,0 +1,6 @@
+---
+keycloak_server:
+  state: present
+  providers:
+    - 'classpath:${jboss.home.dir}/temo/*'
+    - 'module:org.keycloak.examples.event-sysout'

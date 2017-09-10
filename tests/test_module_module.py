@@ -19,7 +19,7 @@ class TestModuleModule(JBossTest):
 
             changes = ModuleModule(self.context).apply(**args)
             self.context.interactive = True
-            print('module.actions(add): %r' % changes)
+            print('module.actions(add): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(2, len(changes))
 

@@ -78,6 +78,7 @@ class SecurityModule(BaseJBossModule):
                 auth_type = authentication.get('type', 'classic')
                 modules = authentication.get('login-modules', [])
                 self.cmd('%s/authentication=%s:add(login-modules=%s)' % (
+                    # FIXME use convert_to_dmr_params
                     resource_path, auth_type, self.converts_to_dmr(modules)))
             return [{'security-domain': name, 'action': 'add'}]
 

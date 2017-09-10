@@ -13,7 +13,7 @@ class TestUndertowModule(JBossTest):
             args = self.load_yaml()
             changes = UndertowFilterModule(self.context).apply(**args)
             self.context.interactive = True
-            print('filter.present(added): %r' % changes)
+            print('filter.present(added): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(2, len(changes))
             self.assertTrue('filter' in changes[0])
@@ -30,7 +30,7 @@ class TestUndertowModule(JBossTest):
             args = self.load_yaml()
             changes = UndertowFilterModule(self.context).apply(**args)
             self.context.interactive = True
-            print('filter.present(added): %r' % changes)
+            print('filter.present(added): \n%s\n----\n' % json.dumps(changes, indent=2))
             self.assertIsNotNone(changes)
             self.assertEqual(1, len(changes))
             self.assertTrue('filter' in changes[0])
