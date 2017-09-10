@@ -108,7 +108,7 @@ class ConnectionResource(object):
         self.__enter__()
 
     def disconnect(self):
-        self.__exit__()
+        self.__exit__(None, None, None)
 
 
 class Connection(ConfigurationChangeHandler):
