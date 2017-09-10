@@ -201,10 +201,39 @@ System.setErr(PrintStream(NoopOutputStream()))
 
 ### Building a Release
 
-This project uses the standard python setup mechanism. To build a distributable package simply use:
+This project uses the standard python setup mechanism and is configured to be deployable to pypi. Build and release distributable packages as followed.
 
 ```sh
-jython setup.py sdist --formats=gztar,zip
+# first cleanup
+rm -rf dist build jyboss.egg-info
+# build source distribution
+python setup.py sdist
+# build wheel binary
+python setup.py bdist_wheel
+# sign distro
+gpg --detach-sign -a --default-key <your-key> dist/jyboss-0.2.3.tar.gz
+gpg --detach-sign -a --default-key <your-key> dist/jyboss-0.2.3-py2.py3-none-any.whl
+# upload to test
+twine upload -r pypitest dist/jyboss-0.2.3.tar.gz \
+                         dist/jyboss-0.2.3.tar.gz.asc \
+                         dist/jyboss-0.2.3-py2.py3-none-any.whl \
+                         dist/jyboss-0.2.3-py2.py3-none-any.whl.asc
+# validate bundle
+export JYTHON_HOME=/opt/jython-2.7.1
+export PATH=$JYTHON_HOME/bin:$PATH
+# install from test library
+pip install --index-url https://test.pypi.org/simple jyboss
+# now test it
+export JBOSS_HOME=/opt/keycloak-3.2.1
+```
+Run this script to validate the module can load and attaches to a JBoss server.
+
+```py
+#!/usr/bin/env jython
+from jyboss import *
+embedded.connect()
+ls()
+embedded.disconnect()
 ```
 
 ### Dev Notes
