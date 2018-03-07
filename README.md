@@ -79,9 +79,9 @@ cmd(':read-resource(attributes-only=true, include-defaults=false)')
 }
 '''
 
-# to assign command output to variables, change to non-interactive mode 
+# to assign command output to variables, change to non-interactive mode
 embedded.context.interactive=False
-# issue any kind of command and assign the result to a variable 
+# issue any kind of command and assign the result to a variable
 r = ls('/subsystem=datasources/data-source=ExampleDS')
 print(r['children'])
 '''
@@ -204,6 +204,8 @@ System.setErr(PrintStream(NoopOutputStream()))
 This project uses the standard python setup mechanism and is configured to be deployable to pypi. Build and release distributable packages as followed.
 
 ```sh
+VER=0.2.4
+GPG_KEY=<your key>
 # first cleanup
 rm -rf dist build jyboss.egg-info
 # build source distribution
@@ -211,20 +213,26 @@ python setup.py sdist
 # build wheel binary
 python setup.py bdist_wheel
 # sign distro
-gpg --detach-sign -a --default-key <your-key> dist/jyboss-0.2.3.tar.gz
-gpg --detach-sign -a --default-key <your-key> dist/jyboss-0.2.3-py2.py3-none-any.whl
+gpg --detach-sign -a --default-key $GPG_KEY dist/jyboss-$VER.tar.gz
+gpg --detach-sign -a --default-key $GPG_KEY dist/jyboss-$VER-py2.py3-none-any.whl
 # upload to test
-twine upload -r pypitest dist/jyboss-0.2.3.tar.gz \
-                         dist/jyboss-0.2.3.tar.gz.asc \
-                         dist/jyboss-0.2.3-py2.py3-none-any.whl \
-                         dist/jyboss-0.2.3-py2.py3-none-any.whl.asc
+twine upload -r pypitest dist/jyboss-$VER.tar.gz \
+                         dist/jyboss-$VER.tar.gz.asc \
+                         dist/jyboss-$VER-py2.py3-none-any.whl \
+                         dist/jyboss-$VER-py2.py3-none-any.whl.asc
 # validate bundle
 export JYTHON_HOME=/opt/jython-2.7.1
 export PATH=$JYTHON_HOME/bin:$PATH
 # install from test library
 pip install --index-url https://test.pypi.org/simple jyboss
 # now test it
-export JBOSS_HOME=/opt/keycloak-3.2.1
+export JBOSS_HOME=/opt/keycloak-3.4.3
+
+# upload to pypi production
+twine upload -r pypi dist/jyboss-$VER.tar.gz \
+                     dist/jyboss-$VER.tar.gz.asc \
+                     dist/jyboss-$VER-py2.py3-none-any.whl \
+                     dist/jyboss-$VER-py2.py3-none-any.whl.asc
 ```
 Run this script to validate the module can load and attaches to a JBoss server.
 
@@ -260,4 +268,4 @@ Unit Test configuration
 
 **Running Keycloak Tests**
 
-To run the keycloak unittest, one will have to download and unzip a keycloak server distribution and the wildfly adapter overlay according to the keycloak installation guide. then either set the `JBOSS_HOME` environment variable or update the `jboss-test.properties` file accordingly. 
+To run the keycloak unittest, one will have to download and unzip a keycloak server distribution and the wildfly adapter overlay according to the keycloak installation guide. then either set the `JBOSS_HOME` environment variable or update the `jboss-test.properties` file accordingly.
