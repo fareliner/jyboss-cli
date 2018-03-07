@@ -71,6 +71,7 @@ def main():
         change_processor.register(KeycloakAdapterModule(jyboss))
         change_processor.register(KeycloakServerModule(jyboss))
         change_processor.register(EEModule(jyboss))
+        change_processor.register(WeldModule(jyboss))
         change_processor.register(ModuleModule(jyboss))
         change_processor.register(DatasourcesModule(jyboss))
         change_processor.register(DeploymentModule(jyboss))

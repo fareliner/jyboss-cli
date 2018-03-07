@@ -16,6 +16,7 @@ from .undertow import UndertowAjpListenerModule
 
 from .extension import ExtensionModule
 from .ee import EEModule
+from .weld import WeldModule
 from .datasources import DatasourcesModule
 from .module import ModuleModule
 from .security import SecurityModule

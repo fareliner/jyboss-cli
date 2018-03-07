@@ -29,7 +29,7 @@ except:
 setup(
     name='jyboss',
 
-    version='0.2.4',
+    version='0.2.5',
 
     url='https://github.com/fareliner/jyboss-cli',
 
@@ -100,6 +100,7 @@ setup(
         'jyboss.command.security',
         'jyboss.command.keycloak',
         'jyboss.command.ee',
+        'jyboss.command.weld',
         'jyboss.command.datasources',
         'jyboss.command.module',
         'jyboss.command.deployment',
