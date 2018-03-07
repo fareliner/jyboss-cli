@@ -22,6 +22,7 @@ else:
 class DatasourcesModule(BaseJBossModule):
     SUBSYSTEM_PARAMS = [
         'data-source',
+        'xa-data-source',
         'jdbc-driver'
     ]
 
@@ -42,6 +43,7 @@ class DatasourcesModule(BaseJBossModule):
         'connection-listener-property',
         'connection-url',
         'datasource-class',
+        'xa-datasource-class',
         'driver-class',
         'driver-name',
         'enabled',
@@ -58,7 +60,7 @@ class DatasourcesModule(BaseJBossModule):
         'min-pool-size',
         'new-connection-sql',
         'password',
-        # 'pool-name', FIXME check out why this is not writable
+        # 'pool-name', looks like cli scripting api will use the name of the data source as pool name
         'pool-fair',
         'pool-prefill',
         'pool-use-strict-min',
@@ -130,9 +132,9 @@ class DatasourcesModule(BaseJBossModule):
 
         for key in datasources.keys():
 
-            if key == 'data-source':
+            if key in ['data-source', 'xa-data-source']:
                 ds = self._format_apply_param(datasources[key])
-                changes += self.apply_datasources(ds)
+                changes += self.apply_datasources(ds, key)
             elif key == 'jdbc-driver':
                 drivers = self._format_apply_param(datasources[key])
                 changes += self.apply_jdbc_drivers(drivers)
@@ -141,7 +143,7 @@ class DatasourcesModule(BaseJBossModule):
 
         return changes if len(changes) > 0 else None
 
-    def apply_datasources(self, datasources):
+    def apply_datasources(self, datasources, datasource_type):
 
         changes = []
         for ds in datasources:
@@ -154,23 +156,23 @@ class DatasourcesModule(BaseJBossModule):
                 raise ParameterError('The datasource state is not one of [present|absent]')
 
             if state == 'present':
-                changes += self.apply_datasource_present(name, ds)
+                changes += self.apply_datasource_present(name, datasource_type, ds)
             elif state == 'absent':
-                changes += self.apply_datasource_absent(name)
+                changes += self.apply_datasource_absent(name, datasource_type)
 
         return changes
 
-    def apply_datasource_absent(self, name):
+    def apply_datasource_absent(self, name, datasource_type):
 
         try:
-            self.cmd('%s/data-source=%s:remove()' % (self.path, name))
-            return [{'datasource': name, 'action': 'delete'}]
+            self.cmd('%s/%s=%s:remove()' % (self.path, datasource_type, name))
+            return [{'datasource': name, 'type': datasource_type, 'action': 'delete'}]
         except NotFoundError:
             return []
 
-    def apply_datasource_present(self, name, datasource):
+    def apply_datasource_present(self, name, datasource_type, datasource):
 
-        ds_path = '%s/data-source=%s' % (self.path, name)
+        ds_path = '%s/%s=%s' % (self.path, datasource_type, name)
 
         changes = []
         try:
@@ -183,13 +185,13 @@ class DatasourcesModule(BaseJBossModule):
                                               target_state=fc,
                                               allowable_attributes=self.DATASOURCE_PARAMS)
             if len(a_changes) > 0:
-                changes.append({'datasource': name, 'action': 'update', 'changes': a_changes})
+                changes.append({'datasource': name, 'type': datasource_type, 'action': 'update', 'changes': a_changes})
 
         except NotFoundError:
             # create the datasource
             ds_params = self.convert_to_dmr_params(datasource, self.DATASOURCE_PARAMS)
-            self.cmd('%s/data-source=%s:add(%s)' % (self.path, name, ds_params))
-            changes.append({'datasource': name, 'action': 'add', 'params': ds_params})
+            self.cmd('%s/%s=%s:add(%s)' % (self.path, datasource_type, name, ds_params))
+            changes.append({'datasource': name, 'type': datasource_type, 'action': 'add', 'params': ds_params})
 
         return changes
 
@@ -234,7 +236,8 @@ class DatasourcesModule(BaseJBossModule):
                     debug('Warning, parameter %s cannot be updated on jdbc driver and will be ignored' % k)
 
             fc = dict(
-                (k, v) for (k, v) in iteritems(jdbc_driver) if k in self.JDBC_DRIVER_PARAMS and k not in self.JDBC_DRIVER_NON_UPDATEABLE_PARAMS)
+                (k, v) for (k, v) in iteritems(jdbc_driver) if
+                k in self.JDBC_DRIVER_PARAMS and k not in self.JDBC_DRIVER_NON_UPDATEABLE_PARAMS)
             a_changes = self._sync_attributes(parent_node=jdbc_driver_dmr,
                                               parent_path=jdbc_driver_path,
                                               target_state=fc,

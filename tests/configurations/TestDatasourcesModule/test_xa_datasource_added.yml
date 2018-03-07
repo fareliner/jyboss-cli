@@ -1,0 +1,20 @@
+---
+datasources:
+  xa_data_source:
+    - name: XATestDS
+      state: present
+      enabled: yes
+      jndi_name: java:jboss/datasources/XATestDS
+      connection_url: "jdbc:h2:mem:unittest;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+      driver_name: h2
+      user_name: sa
+      password: "secret"
+      pool_name: utpool
+      use_ccm: true
+      statistics_enabled: true
+      background_validation: yes
+      jta: yes
+      xa_datasource_class: org.h2.jdbcx.JdbcDataSource
+      exception_sorter_class_name: org.jboss.jca.adapters.jdbc.extensions.h2.H2ExceptionSorter
+      stale_connection_checker_class_name: org.jboss.jca.adapters.jdbc.extensions.h2.H2StaleConnectionChecker
+      valid_connection_checker_class_name: org.jboss.jca.adapters.jdbc.extensions.h2.H2ValidConnectionChecker

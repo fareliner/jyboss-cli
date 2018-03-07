@@ -24,6 +24,24 @@ class TestDatasourcesModule(JBossTest):
             # TODO validate that the xml configuration written reflects these changes
 
     @jboss_context(mode=MODE_EMBEDDED, interactive=False)
+    def test_xa_datasource_added(self):
+        with self.connection:
+            args = self.load_yaml()
+            changes = DatasourcesModule(self.context).apply(**args)
+            self.context.interactive = True
+            print('datasource.present(add): \n%s\n----\n' % json.dumps(changes, indent=2))
+            self.assertIsNotNone(changes)
+            self.assertEqual(1, len(changes))
+            change = changes[0]
+            self.assertTrue('datasource' in change)
+            self.assertTrue('type' in change)
+            self.assertTrue('xa-data-source', change['type'])
+            self.assertTrue('XATestDS', change['datasource'])
+            self.assertTrue('action' in change)
+            self.assertEqual('add', change['action'])
+            # TODO validate that the xml configuration written reflects these changes
+
+    @jboss_context(mode=MODE_EMBEDDED, interactive=False)
     def test_datasource_updated(self):
         with self.connection:
             args = self.load_yaml()
