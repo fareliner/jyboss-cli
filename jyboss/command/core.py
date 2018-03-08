@@ -249,6 +249,7 @@ class CommandHandler(ConfigurationChangeHandler):
         self.unescape_keys = unescape_keys
         self.converts_to_dmr = converts_to_dmr
         self.convert_to_dmr_params = convert_to_dmr_params
+        self.convert_type = convert_type
 
     def configuration_changed(self, change):
         debug('%s.handle: cli is %r' % (self.__class__.__name__, change))

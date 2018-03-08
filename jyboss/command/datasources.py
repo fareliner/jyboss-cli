@@ -60,7 +60,7 @@ class DatasourcesModule(BaseJBossModule):
         'min-pool-size',
         'new-connection-sql',
         'password',
-        # 'pool-name', looks like cli scripting api will use the name of the data source as pool name
+        'pool-name',  # looks like cli scripting api will use the name of the data source as pool name and ignores this
         'pool-fair',
         'pool-prefill',
         'pool-use-strict-min',
@@ -88,6 +88,11 @@ class DatasourcesModule(BaseJBossModule):
         'valid-connection-checker-class-name',
         'valid-connection-checker-properties',
         'validate-on-match'
+    ]
+
+    DATASOURCE_NON_UPDATEABLE_PARAMS = [
+        'jta',
+        'pool-name'
     ]
 
     JDBC_DRIVER_PARAMS = [
@@ -178,12 +183,18 @@ class DatasourcesModule(BaseJBossModule):
         try:
             ds_dmr = self.read_resource_dmr(ds_path)
             # update datasource
-            fc = dict(
-                (k, v) for (k, v) in iteritems(datasource) if k in self.DATASOURCE_PARAMS)
+            fc = dict((k, v) for (k, v) in iteritems(datasource) if
+                      k in self.DATASOURCE_PARAMS and k not in self.DATASOURCE_NON_UPDATEABLE_PARAMS)
+
             a_changes = self._sync_attributes(parent_node=ds_dmr,
                                               parent_path=ds_path,
                                               target_state=fc,
                                               allowable_attributes=self.DATASOURCE_PARAMS)
+
+            # also sync existing xa props
+            if 'xa-datasource-properties' in datasource:
+                a_changes += self.apply_xa_properties(datasource_type, name, datasource['xa-datasource-properties'])
+
             if len(a_changes) > 0:
                 changes.append({'datasource': name, 'type': datasource_type, 'action': 'update', 'changes': a_changes})
 
@@ -191,7 +202,48 @@ class DatasourcesModule(BaseJBossModule):
             # create the datasource
             ds_params = self.convert_to_dmr_params(datasource, self.DATASOURCE_PARAMS)
             self.cmd('%s/%s=%s:add(%s)' % (self.path, datasource_type, name, ds_params))
-            changes.append({'datasource': name, 'type': datasource_type, 'action': 'add', 'params': ds_params})
+
+            add_change = {
+                'datasource': name,
+                'type': datasource_type,
+                'action': 'add',
+                'params': ds_params
+            }
+
+            if 'xa-datasource-properties' in datasource:
+                xa_params = self.apply_xa_properties(datasource_type, name, datasource['xa-datasource-properties'])
+                add_change['xa-datasource-properties'] = xa_params
+
+            changes.append(add_change)
+
+        return changes
+
+    def apply_xa_properties(self, datasource_type, name, properties):
+
+        changes = []
+
+        for key, new_value in iteritems(properties):
+            ds_path = '%s/%s=%s/xa-datasource-properties=%s' % (self.path, datasource_type, name, key)
+            # test if value exists
+            try:
+                dmr = self.read_attribute_dmr(ds_path, 'value')
+                old_value = self.dmr_to_python(dmr)
+                if new_value is None:  # if value is none, remove it
+                    self.cmd('%s:remove()' % ds_path)
+                    changes.append({'attribute': name, 'action': 'delete', 'old_value': old_value})
+                elif new_value is not None and new_value != old_value:  # if value is not none, add or update it
+                    self.cmd('%s:remove()' % ds_path)
+                    self.cmd('%s:add(value=%s' % (ds_path, self.convert_type(new_value)))
+                    changes.append({
+                        'attribute': name,
+                        'action': 'update',
+                        'old_value': old_value,
+                        'new_value': new_value
+                    })
+            except NotFoundError:
+                if new_value is not None:  # if value is not none, add it
+                    self.cmd('%s:add(value=%s' % (ds_path, self.convert_type(new_value)))
+                    changes.append({'attribute': name, 'action': 'add', 'new_value': new_value})
 
         return changes
 

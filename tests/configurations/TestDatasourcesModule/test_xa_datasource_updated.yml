@@ -7,15 +7,12 @@ datasources:
       jndi_name: java:jboss/datasources/XATestDS
       xa_datasource_class: org.h2.jdbcx.JdbcDataSource
       xa_datasource_properties:
-        URL: "jdbc:h2:mem:unittest;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"
+        URL: "jdbc:h2:mem:update"
+        REMOVE: ~
       driver_name: h2
       user_name: sa
       password: "secret"
       pool_name: utpool
-      min_pool_size: 3
-      max_pool_size: 25
-      pool_prefill: true
-      flush_strategy: FailingConnectionOnly
       use_ccm: true
       statistics_enabled: true
       background_validation: true

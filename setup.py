@@ -19,8 +19,6 @@
 # under the License.
 #
 
-import sys
-
 try:
     from setuptools import setup, Extension
 except:
@@ -29,7 +27,7 @@ except:
 setup(
     name='jyboss',
 
-    version='0.2.5',
+    version='0.2.6',
 
     url='https://github.com/fareliner/jyboss-cli',
 
