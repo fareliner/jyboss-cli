@@ -242,12 +242,12 @@ class DatasourcesModule(BaseJBossModule):
                 old_value = self.dmr_to_python(dmr)
                 if new_value is None:  # if value is none, remove it
                     self.cmd('%s:remove()' % ds_path)
-                    changes.append({'attribute': name, 'action': 'delete', 'old_value': old_value})
+                    changes.append({'attribute': key, 'action': 'delete', 'old_value': old_value})
                 elif new_value is not None and new_value != old_value:  # if value is not none, add or update it
                     self.cmd('%s:remove()' % ds_path)
                     self.cmd('%s:add(value=%s' % (ds_path, self.convert_type(new_value)))
                     changes.append({
-                        'attribute': name,
+                        'attribute': key,
                         'action': 'update',
                         'old_value': old_value,
                         'new_value': new_value
@@ -255,7 +255,7 @@ class DatasourcesModule(BaseJBossModule):
             except NotFoundError:
                 if new_value is not None:  # if value is not none, add it
                     self.cmd('%s:add(value=%s' % (ds_path, self.convert_type(new_value)))
-                    changes.append({'attribute': name, 'action': 'add', 'new_value': new_value})
+                    changes.append({'attribute': key, 'action': 'add', 'new_value': new_value})
 
         return changes
 
