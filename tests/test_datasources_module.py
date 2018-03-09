@@ -76,13 +76,13 @@ class TestDatasourcesModule(JBossTest):
             # expect a set of changes
             self.assertTrue('changes' in change)
             updates = change['changes']
-            self.assertEqual(2, len(updates))
-            update = updates[0]
+            self.assertEqual(7, len(updates))
+            update = updates[5]
             self.assertTrue('action' in update)
             self.assertEqual('update', update['action'])
             self.assertTrue('new_value' in update)
             self.assertEqual('jdbc:h2:mem:update', update['new_value'])
-            update = updates[1]
+            update = updates[6]
             self.assertTrue('action' in update)
             self.assertEqual('delete', update['action'])
             self.assertTrue('old_value' in update)

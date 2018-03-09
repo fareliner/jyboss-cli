@@ -16,7 +16,12 @@ datasources:
       use_ccm: true
       statistics_enabled: true
       background_validation: true
+      same_rm_override: false
+      no_tx_separate_pool: true
       jta: true
       exception_sorter_class_name: org.jboss.jca.adapters.jdbc.extensions.h2.H2ExceptionSorter
       stale_connection_checker_class_name: org.jboss.jca.adapters.jdbc.extensions.h2.H2StaleConnectionChecker
-      valid_connection_checker_class_name: org.jboss.jca.adapters.jdbc.extensions.h2.H2ValidConnectionChecker
+      valid_connection_checker_class_name: ~
+      check_valid_connection_sql: "SELECT 1 FROM dual"
+      background_validation: true
+      background_validation_millis: "20000"
