@@ -33,7 +33,7 @@ streams = collections.namedtuple('streams', ['out', 'err'])
 
 # helper functions
 def normalize_dirpath(dirpath):
-    return dirpath[:-1] if dirpath[-1] == '/' or dirpath[-1] == '\\' else dirpath
+    return dirpath[:-1] if dirpath[-1] in ['/', '\\'] else dirpath
 
 
 def retry(exceptions=None, tries=None, delay=2, backoff=2):
@@ -441,19 +441,22 @@ class JyBossContext(ConfigurationChangeHandler):
         instead we are going to add a URL classloader into the loader hierarchy of
         the current thread context
         """
-        jboss_home_str = self.get_jboss_home()
-
-        jboss_home = File(normalize_dirpath(jboss_home_str))
+        jboss_home_str = normalize_dirpath(self.get_jboss_home())
+        jboss_home = File(jboss_home_str)
         if not jboss_home.isDirectory():
             raise ContextError("jboss_home %s is not a directory or does not exist" % jboss_home_str)
 
-        jars = array([], URL)
-        jars.append(File(jboss_home, "/bin/client/jboss-cli-client.jar").toURL())
-        jars.append(File(jboss_home, "/jboss-modules.jar").toURL())
-        current_thread_classloader = Thread.currentThread().getContextClassLoader()
-        updated_classloader = URLClassLoader(jars, current_thread_classloader)
-        Thread.currentThread().setContextClassLoader(updated_classloader)
+        # should work but does not
+        # sys.path.insert(0, os.path.join(jboss_home_str, 'bin', 'client', 'jboss-cli-client.jar'))
+        # sys.path.insert(0, os.path.join(jboss_home_str, 'jboss-modules.jar'))
 
+        jars = array([], URL)
+        jars.append(File(os.path.join(jboss_home_str, 'bin', 'client', 'jboss-cli-client.jar')).toURL())
+        jars.append(File(os.path.join(jboss_home_str, 'jboss-modules.jar')).toURL())
+        current_thread_classloader = Thread.currentThread().getContextClassLoader()
+        Thread.currentThread().setContextClassLoader(URLClassLoader(jars, current_thread_classloader))
+
+        debug('Added jboss client jars from %s to context class loader' % jboss_home_str)
         self._jboss_home_classpath = jboss_home_str
 
     def register_change_handler(self, handler):

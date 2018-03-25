@@ -268,4 +268,12 @@ Unit Test configuration
 
 **Running Keycloak Tests**
 
-To run the keycloak unittest, one will have to download and unzip a keycloak server distribution and the wildfly adapter overlay according to the keycloak installation guide. then either set the `JBOSS_HOME` environment variable or update the `jboss-test.properties` file accordingly.
+To run the keycloak unittest:
+
+1\. setup oa keycloak server 
+
+Either download and unzip a keycloak server distribution and the wildfly adapter overlay according to the keycloak installation guide or use the `create-test-server.sh` script which installs on into `./tmp/server`.
+
+2\. Set environment to use the jboss home 
+
+Either set the `JBOSS_HOME` environment variable or update the `jboss-test.properties` file accordingly

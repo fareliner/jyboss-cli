@@ -73,7 +73,7 @@ class Cli(object):
             self.ctx = CommandContextFactory.getInstance().newCommandContext()
             # TODO factor this out into the instantiation
             # apparently needed in the embedded cli for module loading
-            System.setProperty("jboss.home.dir", jboss_home)
+            System.setProperty('jboss.home.dir', jboss_home)
             # --std-out=echo
             self.ctx.handle(
                 "embed-server --jboss-home=" + jboss_home + " --server-config=" + server_config)
