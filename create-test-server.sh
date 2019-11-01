@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 # ******************************************************************
 # OS specific support.  $var _must_ be set to either true or false.
@@ -42,7 +42,7 @@ fi
 
 
 # we can infer coordinates from pom
-KEYCLOAK_VERSION=3.4.3.Final
+KEYCLOAK_VERSION=4.8.3.Final
 
 KEYCLOAK_PRODUCT=keycloak
 KEYCLOAK_GROUP=org.keycloak
