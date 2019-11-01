@@ -27,7 +27,7 @@ except:
 setup(
     name='jyboss',
 
-    version='0.2.7',
+    version='0.2.8',
 
     url='https://github.com/fareliner/jyboss-cli',
 
@@ -44,7 +44,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
         'Intended Audience :: Developers',

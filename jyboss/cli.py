@@ -22,6 +22,8 @@ except ImportError as jbe:
         'The jboss client library is not present on the python path. Please configure the context classpath (se jyboss documentation).',
         jbe)
 
+__author__ = 'Niels Bertram <nielsbne@gmail.com>'
+__version__ = '0.2.8'
 
 class Cli(object):
     """

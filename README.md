@@ -270,10 +270,16 @@ Unit Test configuration
 
 To run the keycloak unittest:
 
-1\. setup oa keycloak server 
+1. install jython
+  
+  ```bash
+  java -jar ~/Downloads/jython-installer-2.7.1.jar -s -d /usr/local/opt/jython -t standard -e demo
+  ```
+ 
+1. setup up keycloak server 
 
-Either download and unzip a keycloak server distribution and the wildfly adapter overlay according to the keycloak installation guide or use the `create-test-server.sh` script which installs on into `./tmp/server`.
+  Either download and unzip a keycloak server distribution and the wildfly adapter overlay according to the keycloak installation guide or use the `create-test-server.sh` script which installs on into `./tmp/server`.
 
-2\. Set environment to use the jboss home 
+2. Set environment to use the jboss home 
 
-Either set the `JBOSS_HOME` environment variable or update the `jboss-test.properties` file accordingly
+  Either set the `JBOSS_HOME` environment variable or update the `jboss-test.properties` file accordingly
