@@ -99,6 +99,7 @@ setup(
         'jyboss.command.keycloak',
         'jyboss.command.ee',
         'jyboss.command.weld',
+        'jyboss.command.modcluster',
         'jyboss.command.datasources',
         'jyboss.command.module',
         'jyboss.command.deployment',

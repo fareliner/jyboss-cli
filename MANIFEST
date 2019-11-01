@@ -13,6 +13,7 @@ jyboss\command\security.py
 jyboss\command\keycloak.py
 jyboss\command\ee.py
 jyboss\command\weld.py
+jyboss\command\modcluster.py
 jyboss\command\datasources.py
 jyboss\command\module.py
 jyboss\command\deployment.py
