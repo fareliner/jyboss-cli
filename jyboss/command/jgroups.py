@@ -119,7 +119,10 @@ class JGroupsStackModule(BaseJBossModule):
     ]
 
     PROTOCOL_PARAMS = [
-        'socket-binding'
+        'socket-binding',
+        'datasource-jndi-name',
+        'data-source',
+        'frag-size'
     ]
 
     def __init__(self, context=None):
@@ -290,7 +293,7 @@ class JGroupsStackModule(BaseJBossModule):
             # add new set
             for new_proto in protocols:
                 protocol_type = self._get_param(new_proto, 'type')
-                proto_params = self.convert_to_dmr_params(new_proto, self.PROTOCOL_PARAMS + ['type'])
+                proto_params = self.convert_to_dmr_params(new_proto, None)
                 self.cmd('{0}/protocol={1}:add({2})'.format(self.path % stack_name, protocol_type, proto_params))
                 properties = new_proto.get('properties', [])
                 for new_prop in properties:
