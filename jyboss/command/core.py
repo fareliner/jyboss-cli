@@ -724,7 +724,7 @@ class BaseJBossModule(CommandHandler):
                 return default
         elif name not in obj:
             if default == undefined:
-                raise ParameterError('%s: no % s was provided' % (self.__class__.__name__, name))
+                raise ParameterError('%s: no %s was provided' % (self.__class__.__name__, name))
             else:
                 return default
         else:
